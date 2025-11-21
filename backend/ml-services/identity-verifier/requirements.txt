@@ -1,0 +1,8 @@
+# Requirements for identity-verifier service
+flask
+opencv-python
+numpy
+scikit-learn
+pillow
+face-recognition
+python-dotenv

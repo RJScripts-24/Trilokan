@@ -1,14 +1,8 @@
 const Joi = require('joi');
 
-/**
- * Custom Validator for MongoDB ObjectIds
- */
-const objectId = (value, helpers) => {
-  if (!value.match(/^[0-9a-fA-F]{24}$/)) {
-    return helpers.message('"{{#label}}" must be a valid mongo id');
-  }
-  return value;
-};
+
+// Custom validator for integer IDs (Postgres)
+const intId = Joi.number().integer().positive();
 
 const createGrievance = {
   body: Joi.object().keys({
@@ -59,13 +53,13 @@ const getGrievances = {
 
 const getGrievance = {
   params: Joi.object().keys({
-    grievanceId: Joi.string().custom(objectId),
+    grievanceId: intId.required(),
   }),
 };
 
 const updateGrievance = {
   params: Joi.object().keys({
-    grievanceId: Joi.required().custom(objectId),
+    grievanceId: intId.required(),
   }),
   body: Joi.object()
     .keys({
@@ -81,13 +75,13 @@ const updateGrievance = {
 
 const deleteGrievance = {
   params: Joi.object().keys({
-    grievanceId: Joi.string().custom(objectId),
+    grievanceId: intId.required(),
   }),
 };
 
 const updateStatus = {
   params: Joi.object().keys({
-    grievanceId: Joi.string().custom(objectId),
+    grievanceId: intId.required(),
   }),
   body: Joi.object().keys({
     // Updated status enums to match a forensic/trust workflow
@@ -105,10 +99,10 @@ const updateStatus = {
 
 const assignGrievance = {
   params: Joi.object().keys({
-    grievanceId: Joi.string().custom(objectId),
+    grievanceId: intId.required(),
   }),
   body: Joi.object().keys({
-    assigneeId: Joi.string().required().custom(objectId), // Assign to a Forensic Analyst
+    assigneeId: intId.required(), // Assign to a Forensic Analyst
   }),
 };
 

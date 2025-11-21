@@ -14,7 +14,7 @@ module.exports = {
   postgres: {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'trustguard_db',
+    database: process.env.DB_NAME || 'trilokan_db',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     dialect: 'postgres',

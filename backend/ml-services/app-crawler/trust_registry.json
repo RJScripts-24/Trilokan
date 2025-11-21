@@ -1,0 +1,58 @@
+{
+  "com.anydesk.anydeskandroid": {
+    "publisher": "Common Name: philandro Software GmbH, Organization: philandro Software GmbH, Locality: Stuttgart, State/Province: BW, Country: DE",
+    "official_signatures": [
+      "SHA256:74 DC 84 52 00 7C CD FE FC 36 6B 65 AD 53 61 A2 55 74 5D 1F 96 2A 35 65 E6 CF 0F 78 76 2D B3 16"
+    ],
+    "canonical_icon_phash": "",
+    "ingested_at": "2025-11-21T20:44:00.968413Z"
+  },
+  "in.org.npci.upiapp": {
+    "publisher": "Common Name: BHIM, Organizational Unit: NPCI, Organization: NPCI, Locality: BANGALORE, State/Province: KARNATAKA, Country: IN",
+    "official_signatures": [
+      "SHA256:DF C3 18 87 E1 B4 C9 1F F1 8C C7 57 DE 34 8B EE C8 8E AE 98 50 0A 5F 7C C2 C4 09 5D 4C 27 42 1A"
+    ],
+    "canonical_icon_phash": "",
+    "ingested_at": "2025-11-21T20:44:02.421250Z"
+  },
+  "com.google.android.apps.nbu.paisa.user": {
+    "publisher": "Common Name: paisa_android_client, Organizational Unit: Android, Organization: Google Inc., Locality: Mountain View, State/Province: California, Country: US",
+    "official_signatures": [
+      "SHA256:C1 7B 8E 3E 42 7B FC D9 9C C6 5E C2 4F F5 3A E9 17 42 42 92 D7 23 61 5B 74 63 64 68 E3 22 3C 0B"
+    ],
+    "canonical_icon_phash": "",
+    "ingested_at": "2025-11-21T20:44:04.367142Z"
+  },
+  "com.snapwork.hdfc": {
+    "publisher": "Common Name: HDFC Bank, Organizational Unit: IT, Organization: Snapwork, Locality: Mumbai, State/Province: MH, Country: 91",
+    "official_signatures": [
+      "SHA256:82 B9 06 1E 55 CC 89 7C 16 75 38 13 8D BE 69 F9 B2 BF D9 2D 1A BD 42 CE CC 16 6A A4 2B 32 1F D9"
+    ],
+    "canonical_icon_phash": "",
+    "ingested_at": "2025-11-21T20:44:06.026723Z"
+  },
+  "com.kreditbee.android": {
+    "publisher": "Common Name: Android, Organizational Unit: Android, Organization: Google Inc., Locality: Mountain View, State/Province: California, Country: US",
+    "official_signatures": [
+      "SHA256:9D 4F EE F1 C9 2C FB 83 E0 3F 1F 0C 25 C2 8F CF 94 44 74 D4 44 30 2F AF 49 40 FB A8 F1 B1 C9 D9"
+    ],
+    "canonical_icon_phash": "",
+    "ingested_at": "2025-11-21T20:44:10.355593Z"
+  },
+  "net.one97.paytm": {
+    "publisher": "Common Name: Paytm, Organizational Unit: Engineering, Organization: Paytm, Locality: Noida, State/Province: Uttar Pradesh, Country: 91",
+    "official_signatures": [
+      "SHA256:6C C2 6C FC E7 EF 3E 83 91 02 D1 9D A8 3B E4 CA A8 55 12 0B 35 1D 94 92 87 D0 5A 06 A2 EA 65 CA"
+    ],
+    "canonical_icon_phash": "",
+    "ingested_at": "2025-11-21T20:44:18.716670Z"
+  },
+  "com.sbi.lotusintouch": {
+    "publisher": "Common Name: LOTUS, Organizational Unit: SBI GITC, Organization: SBI, Locality: NAVI MUMBAI, State/Province: MAHARASHTRA, Country: IN",
+    "official_signatures": [
+      "SHA256:43 57 76 89 1F 2C A2 14 E3 ED 16 7C 42 F6 0E 47 D9 6F A4 9E 0C 9E A7 6D BD 99 36 FA 54 F1 5F 42"
+    ],
+    "canonical_icon_phash": "d4256f1a6485976b",
+    "ingested_at": "2025-11-21T20:44:24.812228Z"
+  }
+}

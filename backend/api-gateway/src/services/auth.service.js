@@ -26,10 +26,12 @@ const loginUserWithEmailAndPassword = async (email, password) => {
  */
 const logout = async (refreshToken) => {
   // Find the token document in the DB
-  const refreshTokenDoc = await Token.findOne({ 
-    token: refreshToken, 
-    type: tokenTypes.REFRESH, 
-    blacklisted: false 
+  const refreshTokenDoc = await Token.findOne({
+    where: {
+      token: refreshToken,
+      type: tokenTypes.REFRESH,
+      blacklisted: false,
+    },
   });
 
   if (!refreshTokenDoc) {
@@ -37,7 +39,7 @@ const logout = async (refreshToken) => {
   }
 
   // Remove the token so it cannot be used to generate new access tokens
-  await refreshTokenDoc.remove();
+  await refreshTokenDoc.destroy();
 };
 
 /**
@@ -57,7 +59,7 @@ const refreshAuth = async (refreshToken) => {
     }
 
     // 3. Remove the old refresh token (Token Rotation strategy for security)
-    await refreshTokenDoc.remove();
+    await refreshTokenDoc.destroy();
 
     // 4. Generate new Access and Refresh tokens
     return tokenService.generateAuthTokens(user);
@@ -85,7 +87,7 @@ const resetPassword = async (resetPasswordToken, newPassword) => {
     await userService.updateUserById(user.id, { password: newPassword });
     
     // Consume the token (delete all reset tokens for this user to prevent reuse)
-    await Token.deleteMany({ user: user.id, type: tokenTypes.RESET_PASSWORD });
+    await Token.destroy({ where: { userId: user.id, type: tokenTypes.RESET_PASSWORD } });
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed');
   }
@@ -105,7 +107,7 @@ const verifyEmail = async (verifyEmailToken) => {
       throw new Error();
     }
 
-    await Token.deleteMany({ user: user.id, type: tokenTypes.VERIFY_EMAIL });
+    await Token.destroy({ where: { userId: user.id, type: tokenTypes.VERIFY_EMAIL } });
     await userService.updateUserById(user.id, { isEmailVerified: true });
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Email verification failed');

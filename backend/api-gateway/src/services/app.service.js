@@ -1,17 +1,20 @@
-const mongoose = require('mongoose');
 const config = require('../config/config');
-const { Feedback } = require('../models'); // Assumes a Feedback model exists
+const { Feedback, sequelize } = require('../models');
 
 /**
+/**
  * Get system health status
- * Checks Node.js uptime and MongoDB connection state
- * @returns {Object}
+ * Checks Node.js uptime and PostgreSQL connection state
+ * @returns {Promise<Object>}
  */
-const getSystemHealth = () => {
-  // MongoDB Connection States: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-  const dbState = mongoose.connection.readyState;
-  const isDbConnected = dbState === 1;
-
+const getSystemHealth = async () => {
+  let isDbConnected = false;
+  try {
+    await sequelize.authenticate();
+    isDbConnected = true;
+  } catch (err) {
+    isDbConnected = false;
+  }
   return {
     status: isDbConnected ? 'UP' : 'DOWN',
     uptime: process.uptime(),

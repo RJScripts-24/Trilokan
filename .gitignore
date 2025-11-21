@@ -1,0 +1,74 @@
+# .gitignore for Trilokan project
+# Node.js
+node_modules/
+backend/api-gateway/node_modules/
+backend/api-gateway/.env
+backend/api-gateway/.env.*
+backend/api-gateway/.sequelizerc
+backend/api-gateway/coverage/
+backend/api-gateway/logs/
+
+# Python
+*.pyc
+__pycache__/
+backend/ml-services/*/__pycache__/
+backend/ml-services/*/*.pyc
+backend/ml-services/*/env/
+backend/ml-services/*/.env
+backend/ml-services/*/.venv
+backend/ml-services/*/venv/
+backend/ml-services/*/.pytest_cache/
+backend/ml-services/*/.mypy_cache/
+
+# Logs
+*.log
+backend/ml-services/app-crawler/crawler.log
+
+# Compiled source
+*.so
+*.o
+*.out
+
+# Jupyter Notebooks
+*.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# APKs and uploads
+backend/ml-services/app-crawler/reference_apks/*.apk
+backend/ml-services/app-crawler/uploads/
+
+# Misc
+*.swp
+*.swo
+
+# Docker
+*.pid
+
+# Ignore test output
+backend/ml-services/app-crawler/tests/__pycache__/
+backend/ml-services/complaint/tests/__pycache__/
+backend/ml-services/identity-verifier/tests/__pycache__/
+
+# Ignore secrets
+secrets.env
+
+# Ignore backup files
+*~
+
+# Ignore package locks if not needed
+backend/api-gateway/package-lock.json
+backend/package-lock.json
+
+# Ignore database files
+*.sqlite3
+*.db
+
+# Ignore migration and seed logs
+backend/api-gateway/db/migrations/*.log
+backend/api-gateway/db/seeders/*.log

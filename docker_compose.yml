@@ -7,8 +7,8 @@ services:
     container_name: trilokan_db
     restart: always
     environment:
-      POSTGRES_USER: ghost
-      POSTGRES_PASSWORD: ghost@8080
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: trilokan_db
     ports:
       - "5432:5432"  # Maps localhost:5432 -> Container:5432
