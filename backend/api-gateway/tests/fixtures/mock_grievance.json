@@ -1,0 +1,66 @@
+[
+  {
+    "_id": "5ebac534954b54139806c201",
+    "title": "Suspicious Bank Statement - Possible Forgery",
+    "description": "I received this bank statement from a tenant applicant, but the fonts look inconsistent and the totals do not match. Requesting forensic analysis.",
+    "user": "5ebac534954b54139806c112",
+    "category": "document_forgery",
+    "status": "pending_analysis",
+    "priority": "high",
+    "attachments": [
+      "https://s3.amazonaws.com/bucket/uploads/fake_statement_v1.pdf"
+    ],
+    "incidentDate": "2023-10-25T10:00:00.000Z",
+    "createdAt": "2023-10-26T09:00:00.000Z",
+    "updatedAt": "2023-10-26T09:00:00.000Z"
+  },
+  {
+    "_id": "5ebac534954b54139806c202",
+    "title": "Urgent: Phishing Link in Corporate Email",
+    "description": "Received an email claiming to be from HR asking to reset password. The URL looks like 'h-r-portal-update.com'.",
+    "user": "5ebac534954b54139806c112",
+    "category": "phishing_attempt",
+    "status": "confirmed_fraud",
+    "priority": "critical",
+    "riskScore": 98,
+    "remarks": "AI Analysis confirmed malicious domain signature. Blacklisted immediately.",
+    "attachments": [
+      "https://s3.amazonaws.com/bucket/uploads/email_screenshot.png"
+    ],
+    "incidentDate": "2023-10-27T14:30:00.000Z",
+    "createdAt": "2023-10-27T15:00:00.000Z",
+    "updatedAt": "2023-10-28T10:00:00.000Z"
+  },
+  {
+    "_id": "5ebac534954b54139806c203",
+    "title": "Vendor Agreement Verification",
+    "description": "We are about to sign this contract. Can you verify the digital signature integrity and ensure no hidden metadata alterations?",
+    "user": "5ebac534954b54139806c112",
+    "category": "trust_verification",
+    "status": "verified_safe",
+    "priority": "medium",
+    "riskScore": 2,
+    "remarks": "Document hash matches the blockchain record. No alterations detected.",
+    "attachments": [
+      "https://s3.amazonaws.com/bucket/uploads/contract_final.pdf"
+    ],
+    "createdAt": "2023-11-01T09:00:00.000Z",
+    "updatedAt": "2023-11-01T11:00:00.000Z"
+  },
+  {
+    "_id": "5ebac534954b54139806c204",
+    "title": "UPI Payment Fraud - 5000 INR Deducted",
+    "description": "I scanned a QR code to receive money but money was deducted instead. The transaction ID is provided below.",
+    "user": "5ebac534954b54139806c112",
+    "category": "financial_fraud",
+    "status": "under_forensics",
+    "priority": "high",
+    "transactionId": "UPI1234567890",
+    "suspectDetails": "Phone: +91-9876543210",
+    "attachments": [
+      "https://s3.amazonaws.com/bucket/uploads/transaction_receipt.jpg"
+    ],
+    "createdAt": "2023-11-05T12:00:00.000Z",
+    "updatedAt": "2023-11-05T14:00:00.000Z"
+  }
+]
