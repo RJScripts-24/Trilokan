@@ -298,6 +298,12 @@ combined.log
 # ====================================
 docker-compose.override.yml
 .dockerignore
+# Docker volume data (if running locally)
+postgres_data/
+postgres_dev_data/
+prometheus_data/
+grafana_data/
+redis_data/
 
 # ====================================
 # CI/CD & GitHub
@@ -438,12 +444,6 @@ jspm_packages/
 
 # PNPM
 .pnpm-debug.log*
-# Docker volume data (if running locally)
-postgres_data/
-postgres_dev_data/
-prometheus_data/
-grafana_data/
-redis_data/
 
 # ====================================
 # Monitoring & Metrics
