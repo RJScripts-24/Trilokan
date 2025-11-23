@@ -2,7 +2,58 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/asyncHandler');
-const { userService } = require('../services');
+const { userService, authService, tokenService } = require('../services');
+
+/**
+ * Register a new user
+ * POST /api/v1/users/register
+ */
+const register = catchAsync(async (req, res) => {
+  const user = await userService.createUser(req.body);
+  const tokens = await tokenService.generateAuthTokens(user);
+  res.status(httpStatus.CREATED).send({ user, tokens });
+});
+
+/**
+ * Login user
+ * POST /api/v1/users/login
+ */
+const login = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await authService.loginUserWithEmailAndPassword(email, password);
+  const tokens = await tokenService.generateAuthTokens(user);
+  res.send({ user, tokens });
+});
+
+/**
+ * Logout user
+ * POST /api/v1/users/logout
+ */
+const logout = catchAsync(async (req, res) => {
+  await authService.logout(req.body.refreshToken);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+/**
+ * Get current user's profile
+ * GET /api/v1/users/profile
+ */
+const getProfile = catchAsync(async (req, res) => {
+  const user = await userService.getUserById(req.user.id);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  res.send(user);
+});
+
+/**
+ * Update current user's profile
+ * PATCH /api/v1/users/profile
+ */
+const updateProfile = catchAsync(async (req, res) => {
+  const user = await userService.updateUserById(req.user.id, req.body);
+  res.send(user);
+});
 
 /**
  * Create a user manually (Admin only)
@@ -62,6 +113,11 @@ const deleteUser = catchAsync(async (req, res) => {
 });
 
 module.exports = {
+  register,
+  login,
+  logout,
+  getProfile,
+  updateProfile,
   createUser,
   getUsers,
   getUser,

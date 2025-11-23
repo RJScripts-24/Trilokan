@@ -1,7 +1,15 @@
 const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const passport = require('passport');
+const { jwtStrategy } = require('./src/config/passport');
 const { correlationMiddleware, requestLoggerMiddleware } = require('./src/middleware/correlation.middleware');
 const { metricsMiddleware, metricsHandler, healthCheckHandler } = require('./src/utils/metrics');
+const logger = require('./src/config/logger');
 const app = express();
+
+// Initialize Passport JWT Strategy
+passport.use('jwt', jwtStrategy);
 
 // Correlation ID middleware (must be first to capture all requests)
 app.use(correlationMiddleware);
@@ -11,6 +19,10 @@ app.use(metricsMiddleware);
 
 // Request logging middleware (after correlation, before routes)
 app.use(requestLoggerMiddleware);
+
+// Security & CORS middleware
+app.use(helmet());
+app.use(cors());
 
 // Middleware (body parser, CORS, etc.)
 app.use(express.json());
@@ -22,12 +34,14 @@ app.get('/metrics', metricsHandler);
 // Enhanced health check endpoint
 app.get('/health', healthCheckHandler);
 
-// Example: Mount your API routes
-// You can adjust this to your actual route structure
+// Mount API routes
 try {
-  app.use('/api', require('./src/routes'));
+  const apiRoutes = require('./src/routes');
+  app.use('/api', apiRoutes);
+  logger.info('API routes mounted successfully');
 } catch (e) {
-  // If routes/index.js does not exist, skip for now
+  logger.error('Failed to mount API routes:', e);
+  console.error('Route mounting error:', e);
 }
 
 // Health check route (legacy, kept for backward compatibility)

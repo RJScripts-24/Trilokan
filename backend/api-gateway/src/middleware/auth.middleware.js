@@ -32,7 +32,6 @@ const verifyCallback = (req, resolve, reject, requiredRoles) => async (err, user
 
   resolve();
 };
-};
 
 /**
  * Auth Middleware
