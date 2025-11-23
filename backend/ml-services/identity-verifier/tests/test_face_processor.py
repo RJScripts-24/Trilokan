@@ -23,34 +23,44 @@ class TestFaceProcessor(unittest.TestCase):
         self.dummy_frame = np.zeros((480, 640, 3), dtype=np.uint8)
         self.dummy_gray_frame = np.zeros((480, 640), dtype=np.uint8)
         
-        # A mock face region (x, y, w, h)
-        self.mock_face_rect = [(100, 100, 200, 200)]
-        # A mock eye region
-        self.mock_eye_rect = [(50, 50, 50, 50)]
+        # OpenCV's detectMultiScale returns a numpy array of shape (n, 4)
+        # where each row is [x, y, w, h]
+        self.mock_face_rect = np.array([[100, 100, 200, 200]])
+        self.mock_eye_rect = np.array([[50, 50, 50, 50]])
+        self.mock_no_face = np.array([])
 
     @patch('modules.face_processor.cv2.VideoCapture')
-    @patch('modules.face_processor.FACE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.EYE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.cv2.cvtColor', MagicMock(return_value=None)) # Not testing color conversion
+    @patch('modules.face_processor.EYE_CASCADE')
+    @patch('modules.face_processor.FACE_CASCADE')
+    @patch('modules.face_processor.cv2.cvtColor')
     @patch('modules.face_processor.cv2.Laplacian')
-    def test_successful_analysis(self, mock_laplacian, mock_eye_cascade, mock_face_cascade, mock_videocapture):
+    def test_successful_analysis(self, mock_laplacian, mock_cvtcolor, mock_face_cascade, mock_eye_cascade, mock_videocapture):
         """
         Tests a "perfect" video: face found, blinks detected, video is sharp.
         """
         # --- Mock Setup ---
-        # 1. Mock VideoCapture to return a "video" with 20 frames
+        # 1. Mock VideoCapture to return a "video" with enough frames
+        # With FRAME_SKIP=5, we need at least 25 frames to get 5 processed frames
         mock_cap_instance = mock_videocapture.return_value
         mock_cap_instance.isOpened.return_value = True
-        # (True, frame) for 20 frames, then (False, None) to stop
-        mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 20 + [(False, None)]
+        # (True, frame) for 50 frames, then (False, None) to stop
+        mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 50 + [(False, None)]
 
-        # 2. Mock Face/Eye Cascades
-        mock_face_cascade.return_value = self.mock_face_rect # Always find a face
-        # Simulate a blink: Find eyes 10x, find no eyes (blink) 5x, find eyes 5x
-        mock_eye_cascade.side_effect = [self.mock_eye_rect] * 10 + [[]] * 5 + [self.mock_eye_rect] * 5
 
-        # 3. Mock Laplacian (Sharpness)
-        # Mock the .var() method to return a high (sharp) score
+        # 2. Mock cvtColor to return a valid grayscale frame
+        mock_cvtcolor.return_value = self.dummy_gray_frame
+
+        # 3. Mock Face/Eye Cascades - always find face
+        mock_face_cascade.detectMultiScale.return_value = self.mock_face_rect
+        # Simulate a blink: Find eyes, no eyes (blink), find eyes again
+        # Need enough for 10 processed frames (50 total / 5 skip)
+        mock_eye_cascade.detectMultiScale.side_effect = (
+            [self.mock_eye_rect] * 3 +  # Eyes visible
+            [self.mock_no_face] * 2 +    # Blink (no eyes)
+            [self.mock_eye_rect] * 10    # Eyes visible again
+        )
+
+        # 4. Mock Laplacian (Sharpness)
         mock_laplacian.return_value.var.return_value = 200.0 # > BLUR_THRESHOLD (80.0)
 
         # --- Run Analysis ---
@@ -65,22 +75,23 @@ class TestFaceProcessor(unittest.TestCase):
         self.assertAlmostEqual(result['deepfake_check (heuristic)']['sharpness_score'], 200.0)
 
     @patch('modules.face_processor.cv2.VideoCapture')
-    @patch('modules.face_processor.FACE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.EYE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.cv2.cvtColor', MagicMock(return_value=None))
+    @patch('modules.face_processor.EYE_CASCADE')
+    @patch('modules.face_processor.FACE_CASCADE')
+    @patch('modules.face_processor.cv2.cvtColor')
     @patch('modules.face_processor.cv2.Laplacian')
-    def test_fail_liveness_no_blink(self, mock_laplacian, mock_eye_cascade, mock_face_cascade, mock_videocapture):
+    def test_fail_liveness_no_blink(self, mock_laplacian, mock_cvtcolor, mock_face_cascade, mock_eye_cascade, mock_videocapture):
         """
         Tests a "fake" video (e.g., a photo): face found, but no blinks.
         """
         # --- Mock Setup ---
         mock_cap_instance = mock_videocapture.return_value
         mock_cap_instance.isOpened.return_value = True
-        mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 20 + [(False, None)]
+        mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 50 + [(False, None)]
         
-        mock_face_cascade.return_value = self.mock_face_rect # Always find a face
-        mock_eye_cascade.return_value = self.mock_eye_rect # ALWAYS find eyes (no blinks)
-        
+
+        mock_cvtcolor.return_value = self.dummy_gray_frame
+        mock_face_cascade.detectMultiScale.return_value = self.mock_face_rect # Always find a face
+        mock_eye_cascade.detectMultiScale.return_value = self.mock_eye_rect # ALWAYS find eyes (no blinks)
         mock_laplacian.return_value.var.return_value = 200.0 # Video is sharp
         
         # --- Run Analysis ---
@@ -94,22 +105,28 @@ class TestFaceProcessor(unittest.TestCase):
         self.assertEqual(result['liveness_check']['blinks_detected'], 0)
 
     @patch('modules.face_processor.cv2.VideoCapture')
-    @patch('modules.face_processor.FACE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.EYE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.cv2.cvtColor', MagicMock(return_value=None))
+    @patch('modules.face_processor.EYE_CASCADE')
+    @patch('modules.face_processor.FACE_CASCADE')
+    @patch('modules.face_processor.cv2.cvtColor')
     @patch('modules.face_processor.cv2.Laplacian')
-    def test_fail_deepfake_blur(self, mock_laplacian, mock_eye_cascade, mock_face_cascade, mock_videocapture):
+    def test_fail_deepfake_blur(self, mock_laplacian, mock_cvtcolor, mock_face_cascade, mock_eye_cascade, mock_videocapture):
         """
         Tests a "blurry" video: face found, blinks, but fails sharpness check.
         """
         # --- Mock Setup ---
         mock_cap_instance = mock_videocapture.return_value
         mock_cap_instance.isOpened.return_value = True
-        mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 20 + [(False, None)]
+        mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 50 + [(False, None)]
         
-        mock_face_cascade.return_value = self.mock_face_rect
-        mock_eye_cascade.side_effect = [self.mock_eye_rect] * 10 + [[]] * 5 + [self.mock_eye_rect] * 5 # Blink is fine
-        
+
+        mock_cvtcolor.return_value = self.dummy_gray_frame
+        mock_face_cascade.detectMultiScale.return_value = self.mock_face_rect
+        # Simulate blink properly for 10 processed frames (50 total / 5 skip)
+        mock_eye_cascade.detectMultiScale.side_effect = (
+            [self.mock_eye_rect] * 3 +
+            [self.mock_no_face] * 2 +
+            [self.mock_eye_rect] * 10
+        )
         mock_laplacian.return_value.var.return_value = 50.0 # VERY Blurry (< 80.0)
 
         # --- Run Analysis ---
@@ -123,9 +140,9 @@ class TestFaceProcessor(unittest.TestCase):
         self.assertAlmostEqual(result['deepfake_check (heuristic)']['sharpness_score'], 50.0)
 
     @patch('modules.face_processor.cv2.VideoCapture')
-    @patch('modules.face_processor.FACE_CASCADE.detectMultiScale')
-    @patch('modules.face_processor.cv2.cvtColor', MagicMock(return_value=None))
-    def test_no_face_detected(self, mock_face_cascade, mock_videocapture):
+    @patch('modules.face_processor.FACE_CASCADE')
+    @patch('modules.face_processor.cv2.cvtColor')
+    def test_no_face_detected(self, mock_cvtcolor, mock_face_cascade, mock_videocapture):
         """
         Tests a video where no face is ever found.
         """
@@ -133,12 +150,12 @@ class TestFaceProcessor(unittest.TestCase):
         mock_cap_instance = mock_videocapture.return_value
         mock_cap_instance.isOpened.return_value = True
         mock_cap_instance.read.side_effect = [(True, self.dummy_frame)] * 20 + [(False, None)]
-        
-        mock_face_cascade.return_value = [] # Never find a face
+        mock_cvtcolor.return_value = self.dummy_gray_frame
+        mock_face_cascade.detectMultiScale.return_value = self.mock_no_face # Never find a face
 
         # --- Run Analysis ---
         result = face_processor.analyze_face('dummy/path.mp4')
-        
+
         # --- Assertions ---
         self.assertEqual(result['status'], 'failed')
         self.assertFalse(result['overall_pass'])

@@ -1,0 +1,19 @@
+name: idv-ml
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy=1.26.4
+  - pytorch-cpu
+  - torchvision
+  - torchaudio
+  - cpuonly
+  - pip:
+      - opencv-python==4.8.1.78
+      - captum==0.7.0
+      - matplotlib==3.8.2
+      - pillow==10.1.0
+      - scikit-learn==1.3.2
+      - scipy==1.11.4

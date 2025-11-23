@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "5ebac534954b54139806c112",
+    "name": "Harsh (Victim)",
+    "email": "harsh@example.com",
+    "password": "password123",
+    "role": "user",
+    "isEmailVerified": true,
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": "5ebac534954b54139806c113",
+    "name": "Admin Rishabh",
+    "email": "admin@example.com",
+    "password": "password123",
+    "role": "admin",
+    "isEmailVerified": true,
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": "5ebac534954b54139806c114",
+    "name": "Sudhanshu Forensic (Analyst)",
+    "email": "forensics@example.com",
+    "password": "password123",
+    "role": "staff",
+    "isEmailVerified": true,
+    "createdAt": "2023-01-01T00:00:00.000Z"
+  },
+  {
+    "_id": "5ebac534954b54139806c115",
+    "name": "Unverified User",
+    "email": "newbie@example.com",
+    "password": "password123",
+    "role": "user",
+    "isEmailVerified": false,
+    "createdAt": "2023-01-02T00:00:00.000Z"
+  }
+]

@@ -1,0 +1,11 @@
+# Core Networking & Scraping
+requests==2.31.0
+beautifulsoup4==4.12.2
+scrapy==2.11.0
+
+# Scheduling & Automation
+schedule==1.2.0
+
+# Configuration & Utils
+python-dotenv==1.0.0
+urllib3==2.0.7

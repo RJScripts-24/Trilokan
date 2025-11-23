@@ -1,0 +1,7 @@
+# Never commit PII or large media
+feature_csvs/*.csv
+calibration/*.json
+!README.md
+!calibration/
+!feature_csvs/
+datasets/

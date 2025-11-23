@@ -1,8 +1,49 @@
+# ============================================================================
 # Requirements for identity-verifier service
-flask
-opencv-python
-numpy
-scikit-learn
-pillow
-face-recognition
-python-dotenv
+# ============================================================================
+
+# Web Framework
+Flask==3.1.2
+Werkzeug==3.1.3
+
+# Core Scientific Computing
+numpy==2.2.6
+scipy>=1.11.0
+pandas==2.3.3
+
+# Computer Vision & Image Processing
+opencv-python==4.12.0.88
+Pillow==12.0.0
+
+# Machine Learning & Deep Learning Frameworks
+tensorflow==2.20.0
+keras==3.12.0
+torch>=2.0.0
+torchvision>=0.15.0
+scikit-learn>=1.3.0  # For ROC analysis, metrics, and fusion models
+
+# Deep Learning - CNN Deepfake Detection (Phase 1 & 2)
+timm>=0.9.0  # PyTorch Image Models for Xception/EfficientNet architectures
+captum>=0.6.0  # Model interpretability, Grad-CAM, and explainability
+
+# Face Recognition & dlib
+dlib==19.24.99
+face_recognition>=1.3.0
+
+# Audio Processing
+librosa>=0.10.0
+soundfile>=0.12.0
+webrtcvad>=2.0.10
+
+# Visualization & Monitoring
+matplotlib>=3.7.0  # For ROC curves, calibration plots, and visualization
+tqdm==4.67.1
+
+# Document Processing
+pytesseract>=0.3.10
+
+# Utility Libraries
+python-dotenv>=1.0.0
+python-dateutil==2.9.0.post0
+pytz==2025.2
+

@@ -4,6 +4,7 @@ Ingest module
 Purpose: Capture and normalize raw inputs (video/audio/doc) and produce ProcessedCapture objects.
 
 Exposes:
+- IngestCapture (class from capture.py)
 - capture_from_file, capture_from_stream (from capture.py)
 - extract_frames, align_face_crop (from frame_utils.py)
 - load_audio, get_vad_segments (from audio_utils.py)
@@ -12,7 +13,7 @@ Exposes:
 - ProcessedCapture, FrameInfo, AudioSegment (from schemas.py)
 """
 
-from .capture import capture_from_file, capture_from_stream
+from .capture import IngestCapture, capture_from_file, capture_from_stream
 from .frame_utils import extract_frames, align_face_crop
 from .audio_utils import load_audio, get_vad_segments
 from .doc_ingest import load_document_image, normalize_orientation, extract_exif
