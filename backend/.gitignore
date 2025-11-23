@@ -650,7 +650,7 @@ checkpoint_*
 # ====================================
 # Windows
 *.stackdump
-Thumbs.db:encryptable
+Thumbs.db
 ehthumbs_vista.db
 
 # macOS

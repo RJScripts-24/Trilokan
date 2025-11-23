@@ -4,6 +4,15 @@ import hashlib
 from datetime import datetime
 from functools import wraps
 from werkzeug.utils import secure_filename
+from pathlib import Path
+
+# Load environment variables from root .env file
+try:
+    from dotenv import load_dotenv
+    root_env = Path(__file__).parent.parent.parent / '.env'
+    load_dotenv(dotenv_path=root_env)
+except ImportError:
+    pass  # dotenv not installed, will use system environment variables
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -12,7 +21,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # API Key for authentication
-API_KEY = os.environ.get('X_API_KEY', 'dev-api-key-app-crawler')
+API_KEY = os.environ.get('ML_APP_CRAWLER_API_KEY') or os.environ.get('X_API_KEY', 'dev-api-key-app-crawler')
 
 # --- Authentication Decorator ---
 def require_api_key(f):
@@ -268,6 +277,6 @@ def check_app():
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5001
-    port = int(os.environ.get('PORT', 5001))
+    port = int(os.environ.get('ML_APP_CRAWLER_PORT') or os.environ.get('PORT', 5001))
     print(f"Starting App Crawler API Service on port {port}")
     app.run(host='0.0.0.0', port=port, debug=True)

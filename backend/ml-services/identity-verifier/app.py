@@ -5,6 +5,15 @@ from datetime import datetime
 from functools import wraps
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
+from pathlib import Path
+
+# Load environment variables from root .env file
+try:
+    from dotenv import load_dotenv
+    root_env = Path(__file__).parent.parent.parent / '.env'
+    load_dotenv(dotenv_path=root_env)
+except ImportError:
+    pass  # dotenv not installed, will use system environment variables
 
 # --- Module Imports ---
 try:
@@ -40,7 +49,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # API Key for authentication
-API_KEY = os.environ.get('X_API_KEY', 'dev-api-key-identity-verifier')
+API_KEY = os.environ.get('ML_IDENTITY_API_KEY') or os.environ.get('X_API_KEY', 'dev-api-key-identity-verifier')
 
 # Setup logging
 if PHASE2_ENABLED:
@@ -348,6 +357,6 @@ def verify_identity_phase2():
 # --- Run the App ---
 if __name__ == '__main__':
     # Get port from environment variable or default to 5002
-    port = int(os.environ.get('PORT', 5002))
+    port = int(os.environ.get('ML_IDENTITY_PORT') or os.environ.get('PORT', 5002))
     logger.info(f"Starting Identity Verifier Service on port {port}")
     app.run(host='0.0.0.0', port=port, debug=True)

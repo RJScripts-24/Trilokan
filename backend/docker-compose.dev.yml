@@ -16,30 +16,6 @@ version: '3.8'
 
 services:
   # ========================================
-  # PostgreSQL Database
-  # ========================================
-  postgres:
-    image: postgres:15-alpine
-    container_name: trilokan-postgres-dev
-    environment:
-      POSTGRES_DB: ${DB_NAME:-trilokan_db}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-      - ./api-gateway/db/init:/docker-entrypoint-initdb.d
-    networks:
-      - trilokan-dev-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ========================================
   # Complaint ML Service
   # ========================================
   complaint-ml:
@@ -145,13 +121,6 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
       
-      # Database
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-trilokan_db}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      
       # JWT
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this}
       JWT_ACCESS_EXPIRATION_MINUTES: ${JWT_ACCESS_EXPIRATION_MINUTES:-30}
@@ -182,8 +151,6 @@ services:
     networks:
       - trilokan-dev-network
     depends_on:
-      postgres:
-        condition: service_healthy
       complaint-ml:
         condition: service_healthy
       app-crawler:
@@ -242,8 +209,6 @@ services:
 # Named Volumes
 # ========================================
 volumes:
-  postgres_dev_data:
-    name: trilokan-postgres-dev-data
   complaint_dev_uploads:
     name: trilokan-complaint-uploads-dev
   complaint_dev_models:

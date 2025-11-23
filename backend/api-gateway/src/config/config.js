@@ -26,13 +26,20 @@ module.exports = {
           },
         }
       : {
-          // Use individual parameters (Local development)
+          // Use individual parameters (Neon PostgreSQL or Local development)
           host: process.env.DB_HOST || 'localhost',
-          port: process.env.DB_PORT || 5432,
+          port: parseInt(process.env.DB_PORT) || 5432,
           database: process.env.DB_NAME || 'trilokan_db',
           user: process.env.DB_USER || 'postgres',
-          password: process.env.DB_PASSWORD || 'postgres',
+          password: String(process.env.DB_PASSWORD || 'postgres'),
           dialect: 'postgres',
+          dialectOptions: process.env.DB_HOST && process.env.DB_HOST.includes('neon.tech') 
+            ? {
+                ssl: {
+                  rejectUnauthorized: false,
+                },
+              }
+            : {},
         }),
     // Connection pool settings for scalability
     pool: {

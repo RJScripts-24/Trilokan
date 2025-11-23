@@ -155,23 +155,13 @@ export default function App() {
       {/* Enhanced ambient effects */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-black via-zinc-950 to-black" />
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.15, 0.25, 0.15],
-          }}
-          transition={{ duration: 8, repeat: Infinity }}
+        <div
           className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full blur-3xl"
-          style={{ backgroundColor: '#D3AF37' }}
+          style={{ backgroundColor: '#D3AF37', opacity: 0.2 }}
         />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.1, 0.2, 0.1],
-          }}
-          transition={{ duration: 10, repeat: Infinity }}
+        <div
           className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full blur-3xl"
-          style={{ backgroundColor: '#D3AF37' }}
+          style={{ backgroundColor: '#D3AF37', opacity: 0.15 }}
         />
         
         {/* Grid pattern overlay */}
@@ -182,65 +172,29 @@ export default function App() {
           }}
         />
       </div>
-
-      {/* Particle Field Background - spans entire screen */}
-      <AdvancedParticleField />
       
       <div className="relative z-10 min-h-screen flex">
         {/* Left side - Empty space for particle field visibility */}
         <div className="flex-1 flex items-center justify-center p-8 relative">
-          {/* Decorative elements */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-            className="absolute top-20 left-20 w-2 h-2 rounded-full"
-            style={{ backgroundColor: '#D3AF37' }}
-          />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-20 right-20 w-3 h-3 rounded-full"
-            style={{ backgroundColor: '#D3AF37', opacity: 0.5 }}
-          />
         </div>
 
         {/* Right side - Form */}
         <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
           {/* Logo with enhanced styling */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="absolute top-12 left-12"
-          >
-            <motion.h1 
-              className="text-5xl tracking-tight"
-              whileHover={{ scale: 1.05 }}
-            >
-            </motion.h1>
-          </motion.div>
+          <div className="absolute top-12 left-12">
+            <h1 className="text-5xl tracking-tight">
+            </h1>
+          </div>
 
-          {/* Decorative floating elements */}
-          <motion.div
-            animate={{ y: [0, -20, 0], rotate: [0, 180, 360] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-32 right-32 w-20 h-20 rounded-2xl border-2 opacity-10"
-            style={{ borderColor: '#D3AF37' }}
-          />
-
-          <AnimatePresence mode="wait">
+          <div>
             {/* Sign In Form */}
             {!isSignUp ? (
-              <motion.div
+              <div
                 key="signin"
-                initial={{ opacity: 0, scale: 0.95, rotateY: -10 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                exit={{ opacity: 0, scale: 0.95, rotateY: 10 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
                 className="w-full max-w-md"
               >
                 {/* Glass card container */}
-                <motion.div
+                <div
                   className="relative p-10 rounded-3xl backdrop-blur-xl border"
                   style={{
                     background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
@@ -249,58 +203,37 @@ export default function App() {
                   }}
                 >
                   {/* Glow effect inside card */}
-                  <div className="absolute inset-0 rounded-3xl opacity-0 hover:opacity-100 transition-opacity duration-500"
+                  <div className="absolute inset-0 rounded-3xl"
                     style={{
-                      background: 'radial-gradient(circle at 50% 0%, rgba(211, 175, 55, 0.1), transparent 70%)'
+                      background: 'radial-gradient(circle at 50% 0%, rgba(211, 175, 55, 0.05), transparent 70%)'
                     }}
                   />
 
                   <div className="relative z-10">
                     {/* Logo at top of form */}
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.1 }}
-                      className="text-center mb-8"
-                    >
-                      <motion.h1 
-                        className="text-4xl tracking-tight mb-6"
-                        whileHover={{ scale: 1.05 }}
-                      >
+                    <div className="text-center mb-8">
+                      <h1 className="text-4xl tracking-tight mb-6">
                         <span style={{ color: '#D3AF37', fontWeight: 700 }}>Tri</span>
                         <span className="text-white" style={{ fontWeight: 300 }}>Løklan</span>
-                      </motion.h1>
-                    </motion.div>
+                      </h1>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                      className="text-center mb-8"
-                    >
+                    <div className="text-center mb-8">
                       <h2 className="text-4xl text-white mb-3">
                         Welcome Back
                       </h2>
                       <p className="text-zinc-400">Sign in to continue to your account</p>
-                    </motion.div>
+                    </div>
 
                     <form onSubmit={handleSignIn} className="space-y-6">
                       {/* Error Display */}
                       {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"
-                        >
+                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
                           {error}
-                        </motion.div>
+                        </div>
                       )}
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                      >
+                      <div>
                         <label className="block text-zinc-400 mb-2 text-sm">Email Address</label>
                         <div className="relative">
                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -321,13 +254,9 @@ export default function App() {
                             }}
                           />
                         </div>
-                      </motion.div>
+                      </div>
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                      >
+                      <div>
                         <label className="block text-zinc-400 mb-2 text-sm">Password</label>
                         <div className="relative">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -355,14 +284,9 @@ export default function App() {
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
                         </div>
-                      </motion.div>
+                      </div>
 
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.5 }}
-                        className="flex items-center justify-between"
-                      >
+                      <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" className="w-4 h-4 rounded" style={{ accentColor: '#D3AF37' }} />
                           <span className="text-zinc-400 text-sm">Remember me</span>
@@ -370,47 +294,22 @@ export default function App() {
                         <button type="button" className="text-sm hover:underline transition-all" style={{ color: '#D3AF37' }}>
                           Forgot Password?
                         </button>
-                      </motion.div>
+                      </div>
 
-                      <motion.button
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.6 }}
-                        whileHover={{ scale: 1.02, boxShadow: '0 20px 40px -10px rgba(211, 175, 55, 0.4)' }}
-                        whileTap={{ scale: 0.98 }}
+                      <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full mt-6 px-6 py-4 text-black rounded-xl flex items-center justify-center gap-3 group transition-all relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full mt-6 px-6 py-4 text-black rounded-xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ 
                           background: 'linear-gradient(135deg, #D3AF37 0%, #B8941F 100%)',
                         }}
                       >
-                        <span className="relative z-10">{isLoading ? 'Signing In...' : 'Sign In'}</span>
-                        {!isLoading && (
-                          <motion.div
-                            className="relative z-10"
-                            animate={{ x: [0, 5, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <ArrowRight className="w-5 h-5" />
-                          </motion.div>
-                        )}
-                        
-                        {/* Shine effect */}
-                        <motion.div
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30"
-                          animate={{ x: ['-100%', '200%'] }}
-                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      </motion.button>
+                        <span>{isLoading ? 'Signing In...' : 'Sign In'}</span>
+                        {!isLoading && <ArrowRight className="w-5 h-5" />}
+                      </button>
                     </form>
 
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.6, delay: 0.7 }}
-                      className="mt-8 text-center"
-                    >
+                    <div className="mt-8 text-center">
                       <div className="flex items-center gap-4 mb-6">
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
                         <span className="text-zinc-500 text-sm">or</span>
@@ -419,31 +318,25 @@ export default function App() {
                       
                       <p className="text-zinc-400">
                         Don't have an account?{' '}
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={() => setIsSignUp(true)}
                           className="transition-colors"
                           style={{ color: '#D3AF37' }}
                         >
                           Sign Up
-                        </motion.button>
+                        </button>
                       </p>
-                    </motion.div>
+                    </div>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             ) : (
               /* Sign Up Form */
-              <motion.div
+              <div
                 key="signup"
-                initial={{ opacity: 0, scale: 0.95, rotateY: -10 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                exit={{ opacity: 0, scale: 0.95, rotateY: 10 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
                 className="w-full max-w-md"
               >
-                <motion.div
+                <div
                   className="relative p-10 rounded-3xl backdrop-blur-xl border"
                   style={{
                     background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
@@ -451,57 +344,40 @@ export default function App() {
                     boxShadow: '0 8px 32px 0 rgba(211, 175, 55, 0.1)'
                   }}
                 >
-                  <div className="absolute inset-0 rounded-3xl opacity-0 hover:opacity-100 transition-opacity duration-500"
+                  <div className="absolute inset-0 rounded-3xl"
                     style={{
-                      background: 'radial-gradient(circle at 50% 0%, rgba(211, 175, 55, 0.1), transparent 70%)'
+                      background: 'radial-gradient(circle at 50% 0%, rgba(211, 175, 55, 0.05), transparent 70%)'
                     }}
                   />
 
                   <div className="relative z-10">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                      className="text-center mb-8"
-                    >
+                    <div className="text-center mb-8">
                       <h2 className="text-4xl text-white mb-3">
                         Create Account
                       </h2>
                       <p className="text-zinc-400">Join us and start your journey</p>
-                    </motion.div>
+                    </div>
 
                     <form onSubmit={handleSignUp} className="space-y-5">
                       {/* Error Display */}
                       {error && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"
-                        >
+                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
                           {error}
-                        </motion.div>
+                        </div>
                       )}
 
                       {/* Validation Errors */}
                       {validationErrors.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 text-sm"
-                        >
+                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 text-sm">
                           <ul className="list-disc list-inside space-y-1">
                             {validationErrors.map((err, idx) => (
                               <li key={idx}>{err}</li>
                             ))}
                           </ul>
-                        </motion.div>
+                        </div>
                       )}
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                      >
+                      <div>
                         <label className="block text-zinc-400 mb-2 text-sm">Full Name</label>
                         <div className="relative">
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -522,13 +398,9 @@ export default function App() {
                             }}
                           />
                         </div>
-                      </motion.div>
+                      </div>
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                      >
+                      <div>
                         <label className="block text-zinc-400 mb-2 text-sm">Email Address</label>
                         <div className="relative">
                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -549,13 +421,9 @@ export default function App() {
                             }}
                           />
                         </div>
-                      </motion.div>
+                      </div>
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.5 }}
-                      >
+                      <div>
                         <label className="block text-zinc-400 mb-2 text-sm">Password</label>
                         <div className="relative">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -583,13 +451,9 @@ export default function App() {
                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
                         </div>
-                      </motion.div>
+                      </div>
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.6 }}
-                      >
+                      <div>
                         <label className="block text-zinc-400 mb-2 text-sm">Confirm Password</label>
                         <div className="relative">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
@@ -617,46 +481,22 @@ export default function App() {
                             {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                           </button>
                         </div>
-                      </motion.div>
+                      </div>
 
-                      <motion.button
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.7 }}
-                        whileHover={{ scale: 1.02, boxShadow: '0 20px 40px -10px rgba(211, 175, 55, 0.4)' }}
-                        whileTap={{ scale: 0.98 }}
+                      <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full mt-6 px-6 py-4 text-black rounded-xl flex items-center justify-center gap-3 group transition-all relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full mt-6 px-6 py-4 text-black rounded-xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ 
                           background: 'linear-gradient(135deg, #D3AF37 0%, #B8941F 100%)',
                         }}
                       >
-                        <span className="relative z-10">{isLoading ? 'Creating Account...' : 'Create Account'}</span>
-                        {!isLoading && (
-                          <motion.div
-                            className="relative z-10"
-                            animate={{ x: [0, 5, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <ArrowRight className="w-5 h-5" />
-                          </motion.div>
-                        )}
-                        
-                        <motion.div
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30"
-                          animate={{ x: ['-100%', '200%'] }}
-                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      </motion.button>
+                        <span>{isLoading ? 'Creating Account...' : 'Create Account'}</span>
+                        {!isLoading && <ArrowRight className="w-5 h-5" />}
+                      </button>
                     </form>
 
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.6, delay: 0.8 }}
-                      className="mt-8 text-center"
-                    >
+                    <div className="mt-8 text-center">
                       <div className="flex items-center gap-4 mb-6">
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-zinc-700 to-transparent" />
                         <span className="text-zinc-500 text-sm">or</span>
@@ -665,22 +505,20 @@ export default function App() {
                       
                       <p className="text-zinc-400">
                         Already have an account?{' '}
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={() => setIsSignUp(false)}
                           className="transition-colors"
                           style={{ color: '#D3AF37' }}
                         >
                           Sign In
-                        </motion.button>
+                        </button>
                       </p>
-                    </motion.div>
+                    </div>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>

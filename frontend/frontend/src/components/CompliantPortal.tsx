@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { FileText, Mic, ChevronDown, Plus, Filter, ArrowUpDown, Upload, X } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { grievanceService } from '../api';
 import { handleApiError, validateFile } from '../utils/errorHandler';
 import type { User, Grievance } from '../types';
@@ -16,8 +17,23 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
   const [showBankDropdown, setShowBankDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'create'>('list');
-  const [complaints, setComplaints] = useState<Grievance[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [complaints, setComplaints] = useState<Grievance[]>([]); // For form reset only
+  // Use React Query for fetching complaints
+  const {
+    data: complaintsData,
+    isLoading,
+    error: complaintsError,
+    refetch: refetchComplaints
+  } = useQuery({
+    queryKey: ['complaints', viewMode],
+    queryFn: async () => {
+      if (viewMode !== 'list') return [];
+      const response = await grievanceService.getGrievances({ page: 1, limit: 10 });
+      return response.results;
+    },
+    enabled: viewMode === 'list',
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
@@ -27,6 +43,19 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  // Clean up audio stream on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+      // Attempt to stop any active audio stream
+      if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isRecording]);
 
   const subjects = [
     { label: 'Fraud', value: 'financial_fraud' },
@@ -39,26 +68,7 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
   
   const banks = ['HDFC Bank', 'ICICI Bank', 'SBI', 'Axis Bank', 'Kotak Mahindra', 'Other'];
 
-  // Fetch complaints on component mount
-  useEffect(() => {
-    if (viewMode === 'list') {
-      fetchComplaints();
-    }
-  }, [viewMode]);
-
-  const fetchComplaints = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const response = await grievanceService.getGrievances({ page: 1, limit: 10 });
-      setComplaints(response.results);
-    } catch (err) {
-      const errorResult = handleApiError(err);
-      setError(errorResult.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Removed fetchComplaints and useEffect, now handled by React Query
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -160,16 +170,15 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
       );
 
       setSuccessMessage('Complaint submitted successfully!');
-      
       // Reset form
       setSubject('');
       setBankInstitution('');
       setComplaintDetail('');
       setEvidenceFiles([]);
       setVoiceAudio(null);
-      
-      // Return to list view after 2 seconds
+      // Refetch complaints and return to list view after 2 seconds
       setTimeout(() => {
+        refetchComplaints();
         setViewMode('list');
         setSuccessMessage('');
       }, 2000);
@@ -199,24 +208,20 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
       <div className="w-full">
         {/* Header Section */}
         <div className="mb-8">
-          <motion.h2
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl text-white mb-3"
-          >
+          <h2 className="text-4xl text-white mb-3">
             Hey {user.name.split(' ')[0]}, Welcome to <span className="text-[#FFF86A]">Tri</span>klan
-          </motion.h2>
+          </h2>
           <p className="text-white/70 text-xl">Been scammed? Raise your voice to take action</p>
         </div>
 
         {/* Error Display */}
-        {error && (
+        {(error || complaintsError) && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"
           >
-            {error}
+            {error || (complaintsError ? complaintsError.message : '')}
           </motion.div>
         )}
 
@@ -226,14 +231,12 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
             <h3 className="text-white text-4xl">My Complaints</h3>
             
             {/* New Complaints Button */}
-            <motion.button
+            <button
               onClick={() => setViewMode('create')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               className="px-8 py-3 rounded-2xl border-2 border-[#FFCF2F] text-white text-xl flex items-center gap-3 hover:bg-[#FFCF2F]/10 transition-all"
             >
               New Complaints <Plus className="w-6 h-6" />
-            </motion.button>
+            </button>
           </div>
 
           {/* White divider line */}
@@ -245,15 +248,13 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
               <div className="inline-block w-12 h-12 border-4 border-[#FFCF2F] border-t-transparent rounded-full animate-spin"></div>
               <p className="text-white mt-4">Loading complaints...</p>
             </div>
-          ) : complaints.length === 0 ? (
+          ) : (complaintsData?.length ?? 0) === 0 ? (
             <div className="text-center py-12">
               <p className="text-white/70 text-xl">No complaints found. Create your first complaint!</p>
             </div>
           ) : (
             /* Table */
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               className="rounded-2xl overflow-hidden p-8"
               style={{
                 background: 'radial-gradient(circle at center, rgba(110,97,97,0.3) 0%, rgba(161,141,141,0.35) 50%, rgba(212,186,186,0.4) 100%)',
@@ -281,12 +282,9 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
 
               {/* Table Rows */}
               <div className="space-y-0">
-                {complaints.map((complaint, index) => (
-                  <motion.div
+                {complaintsData?.map((complaint, index) => (
+                  <div
                     key={complaint.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
                     className="grid grid-cols-12 gap-6 py-5 border-t border-white/30"
                   >
                     <div className="col-span-2">
@@ -318,10 +316,10 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
                     <div className="col-span-2">
                       <p className="text-white text-sm">{formatDate(complaint.createdAt)}</p>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           )}
         </div>
       </div>
@@ -338,14 +336,12 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
         </div>
         
         {/* Back to List Button */}
-        <motion.button
+        <button
           onClick={() => setViewMode('list')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
           className="px-6 py-3 rounded-xl border-2 border-[#FFCF2F] text-white hover:bg-[#FFCF2F]/10 transition-all"
         >
           ← Back to Complaints
-        </motion.button>
+        </button>
       </div>
 
       {/* Error Display */}
@@ -370,9 +366,7 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
         </motion.div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         className="p-8 rounded-3xl backdrop-blur-xl border"
         style={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
@@ -476,7 +470,6 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
                   className="hidden"
                 />
               </label>
-              
               {/* Voice Recording */}
               <button
                 type="button"
@@ -534,10 +527,9 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
         {isSubmitting && uploadProgress > 0 && (
           <div className="mb-6">
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${uploadProgress}%` }}
+              <div
                 className="h-full bg-[#FFCF2F]"
+                style={{ width: `${uploadProgress}%` }}
               />
             </div>
             <p className="text-white/70 text-sm mt-2 text-center">{uploadProgress}% uploaded</p>
@@ -546,18 +538,16 @@ export function CompliantPortal({ user }: CompliantPortalProps) {
 
         {/* Submit Button */}
         <div className="flex justify-end">
-          <motion.button
+          <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            whileHover={!isSubmitting ? { scale: 1.05 } : {}}
-            whileTap={!isSubmitting ? { scale: 0.95 } : {}}
             className="px-12 py-4 rounded-2xl text-white text-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: 'linear-gradient(135deg, #FFCF2F 0%, #A98303 100%)' }}
           >
             {isSubmitting ? 'Submitting...' : 'Submit'}
-          </motion.button>
+          </button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

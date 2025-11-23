@@ -1,25 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database (uses existing trilokan_db container)
-  postgres:
-    image: postgres:15-alpine
-    container_name: trilokan_db
-    environment:
-      POSTGRES_DB: trilokan_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   # Complaint ML Service
   complaint-ml:
     build:
@@ -89,11 +70,6 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: trilokan_db
-      DB_USER: postgres
-      DB_PASSWORD: postgres
       JWT_SECRET: your-super-secret-jwt-key-change-this
       ML_COMPLAINT_URL: http://complaint-ml:5000
       ML_COMPLAINT_API_KEY: dev-api-key-complaint-service
@@ -107,8 +83,6 @@ services:
       - ./api-gateway:/app
       - /app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       complaint-ml:
         condition: service_healthy
       app-crawler:
@@ -122,7 +96,6 @@ services:
       retries: 3
 
 volumes:
-  postgres_data:
   complaint_uploads:
   app_uploads:
   identity_uploads:

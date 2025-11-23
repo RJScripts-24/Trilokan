@@ -1,74 +1,51 @@
-# .gitignore for Trilokan project
-# Node.js
-node_modules/
-backend/api-gateway/node_modules/
-backend/api-gateway/.env
-backend/api-gateway/.env.*
-backend/api-gateway/.sequelizerc
-backend/api-gateway/coverage/
-backend/api-gateway/logs/
+# .gitignore for the complaint ML service
 
-# Python
-*.pyc
+# Python virtualenvs and caches
+.venv/
+venv/
+env/
 __pycache__/
-backend/ml-services/*/__pycache__/
-backend/ml-services/*/*.pyc
-backend/ml-services/*/env/
-backend/ml-services/*/.env
-backend/ml-services/*/.venv
-backend/ml-services/*/venv/
-backend/ml-services/*/.pytest_cache/
-backend/ml-services/*/.mypy_cache/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
 
-# Logs
+# Environment files and secrets
+.env
+.env.*
+secrets.env
+
+# Logs and test output
 *.log
-backend/ml-services/app-crawler/crawler.log
+coverage/
+app-crawler/crawler.log
 
-# Compiled source
-*.so
-*.o
-*.out
-
-# Jupyter Notebooks
-*.ipynb_checkpoints
+# Jupyter
+.ipynb_checkpoints/
 
 # VSCode
 .vscode/
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# APKs and uploads
-backend/ml-services/app-crawler/reference_apks/*.apk
-backend/ml-services/app-crawler/uploads/
+# APKs and uploads (service-specific)
+app-crawler/reference_apks/*.apk
+app-crawler/uploads/
+uploads/
+temp_uploads/
 
-# Misc
-*.swp
-*.swo
-
-# Docker
-*.pid
-
-# Ignore test output
-backend/ml-services/app-crawler/tests/__pycache__/
-backend/ml-services/complaint/tests/__pycache__/
-backend/ml-services/identity-verifier/tests/__pycache__/
-
-# Ignore secrets
-secrets.env
-
-# Ignore backup files
-*~
-
-# Ignore package locks if not needed
-backend/api-gateway/package-lock.json
-backend/package-lock.json
-
-# Ignore database files
+# Database and local files
 *.sqlite3
 *.db
 
-# Ignore migration and seed logs
-backend/api-gateway/db/migrations/*.log
-backend/api-gateway/db/seeders/*.log
+# Backup and swap files
+*~
+*.swp
+*.swo
+
+# Misc compiled objects
+*.so
+*.o
+*.out
+

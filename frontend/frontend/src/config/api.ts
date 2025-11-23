@@ -1,122 +1,88 @@
-# API Configuration
+/**
+ * API Configuration
+ * Central configuration for all API endpoints and settings
+ */
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
-export const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+export const API_CONFIG = {
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  VERSION: import.meta.env.VITE_API_VERSION || 'v1',
+  TIMEOUT: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
+  UPLOAD_TIMEOUT: Number(import.meta.env.VITE_API_UPLOAD_TIMEOUT) || 60000,
+} as const;
 
-export const endpoints = {
-  auth: {
-    login: '/auth/login',
-    register: '/auth/register',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
+/**
+ * API Endpoints
+ */
+export const API_ENDPOINTS = {
+  // Auth endpoints
+  AUTH: {
+    REGISTER: `/api/${API_CONFIG.VERSION}/auth/register`,
+    LOGIN: `/api/${API_CONFIG.VERSION}/auth/login`,
+    LOGOUT: `/api/${API_CONFIG.VERSION}/auth/logout`,
+    REFRESH_TOKENS: `/api/${API_CONFIG.VERSION}/auth/refresh-tokens`,
   },
-  identity: {
-    verify: '/identity/verify',
-    status: '/identity/status',
-    upload: '/identity/upload',
-  },
-  appChecker: {
-    scan: '/appchecker/scan',
-    results: '/appchecker/results/:id',
-    history: '/appchecker/history',
-  },
-  complaints: {
-    create: '/complaints',
-    list: '/complaints',
-    get: '/complaints/:id',
-    update: '/complaints/:id',
-    delete: '/complaints/:id',
-  },
-  wallet: {
-    balance: '/wallet/balance',
-    transactions: '/wallet/transactions',
-    transfer: '/wallet/transfer',
-    history: '/wallet/history',
-  },
-  support: {
-    tickets: '/support/tickets',
-    create: '/support/create',
-    get: '/support/tickets/:id',
-    update: '/support/tickets/:id',
-  },
-  news: {
-    list: '/news',
-    get: '/news/:id',
-    categories: '/news/categories',
-  },
-};
-
-// API Client helper
-export class ApiClient {
-  private baseURL: string;
   
-  constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL;
-  }
+  // User endpoints
+  USERS: {
+    BASE: `/api/${API_CONFIG.VERSION}/users`,
+    REGISTER: `/api/${API_CONFIG.VERSION}/users/register`,
+    LOGIN: `/api/${API_CONFIG.VERSION}/users/login`,
+    PROFILE: `/api/${API_CONFIG.VERSION}/users/profile`,
+    LOGOUT: `/api/${API_CONFIG.VERSION}/users/logout`,
+    BY_ID: (userId: string) => `/api/${API_CONFIG.VERSION}/users/${userId}`,
+  },
+  
+  // Grievance endpoints
+  GRIEVANCES: {
+    BASE: `/api/${API_CONFIG.VERSION}/grievances`,
+    BY_ID: (id: string) => `/api/${API_CONFIG.VERSION}/grievances/${id}`,
+    STATUS: (id: string) => `/api/${API_CONFIG.VERSION}/grievances/${id}/status`,
+    ASSIGN: (id: string) => `/api/${API_CONFIG.VERSION}/grievances/${id}/assign`,
+  },
+  
+  // Identity verification endpoints
+  IDENTITY: {
+    CHALLENGE: `/api/${API_CONFIG.VERSION}/identity/challenge`,
+    VERIFY: `/api/${API_CONFIG.VERSION}/identity/verify`,
+  },
+  
+  // App verification endpoints
+  APPS: {
+    VERIFY_FILE: `/api/${API_CONFIG.VERSION}/apps/verify-file`,
+    VERIFY_PACKAGE: `/api/${API_CONFIG.VERSION}/apps/verify-package`,
+    REPORT: `/api/${API_CONFIG.VERSION}/apps/report`,
+  },
+  
+  // System endpoints
+  SYSTEM: {
+    HEALTH: `/api/${API_CONFIG.VERSION}/app/health`,
+    CONFIG: `/api/${API_CONFIG.VERSION}/app/config`,
+    FEEDBACK: `/api/${API_CONFIG.VERSION}/app/feedback`,
+    ENUMS: `/api/${API_CONFIG.VERSION}/app/enums`,
+    DOCS: `/api/${API_CONFIG.VERSION}/docs`,
+    DOCS_JSON: `/api/${API_CONFIG.VERSION}/docs/json`,
+  },
+} as const;
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
+/**
+ * Storage Keys
+ */
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'accessToken',
+  REFRESH_TOKEN: 'refreshToken',
+  USER: 'user',
+} as const;
 
-    const response = await fetch(`${this.baseURL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
-    }
-    
-    return response.json();
-  }
-
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' });
-  }
-
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async put<T>(endpoint: string, data?: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
-  }
-
-  async upload<T>(endpoint: string, formData: FormData): Promise<T> {
-    const token = localStorage.getItem('authToken');
-    
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: formData,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Upload Error: ${response.statusText}`);
-    }
-    
-    return response.json();
-  }
-}
-
-export const apiClient = new ApiClient();
+/**
+ * HTTP Status Codes
+ */
+export const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;

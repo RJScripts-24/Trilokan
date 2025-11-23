@@ -1,7 +1,9 @@
 # Never commit PII or large media
-feature_csvs/*.csv
-calibration/*.json
-!README.md
-!calibration/
-!feature_csvs/
+# Ignore generated feature CSVs, calibration artifacts, and datasets
+feature_csvs/
+calibration/
 datasets/
+
+# Keep README and any intentionally committed metadata
+!README.md
+

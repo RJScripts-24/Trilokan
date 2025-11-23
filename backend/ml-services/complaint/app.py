@@ -5,6 +5,15 @@ from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from pathlib import Path
+
+# Load environment variables from root .env file
+try:
+    from dotenv import load_dotenv
+    root_env = Path(__file__).parent.parent.parent / '.env'
+    load_dotenv(dotenv_path=root_env)
+except ImportError:
+    pass  # dotenv not installed, will use system environment variables
 
 # Import logic from the modules directory (to be created next)
 # We assume these modules will export specific functions
@@ -39,7 +48,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # API Key for authentication
-API_KEY = os.environ.get('X_API_KEY', 'dev-api-key-complaint-service')
+API_KEY = os.environ.get('ML_COMPLAINT_API_KEY') or os.environ.get('X_API_KEY', 'dev-api-key-complaint-service')
 
 # --- Authentication Decorator ---
 def require_api_key(f):
@@ -292,7 +301,7 @@ def detect_deepfake_endpoint():
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('ML_COMPLAINT_PORT') or os.environ.get('PORT', 5000))
     
     logger.info(f"Starting Grievance AI Service on port {port}")
     app.run(host='0.0.0.0', port=port, debug=True)

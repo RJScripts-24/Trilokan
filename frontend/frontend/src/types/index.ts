@@ -1,4 +1,6 @@
+// ===========================
 // User Types
+// ===========================
 export interface User {
   id: string;
   name: string;
@@ -11,7 +13,15 @@ export interface User {
   updatedAt: string;
 }
 
+export interface UpdateUserProfileRequest {
+  name?: string;
+  phoneNumber?: string;
+  preferredLanguage?: string;
+}
+
+// ===========================
 // Auth Types
+// ===========================
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -46,7 +56,9 @@ export interface LogoutRequest {
   refreshToken: string;
 }
 
+// ===========================
 // Grievance/Complaint Types
+// ===========================
 export interface Grievance {
   id: string;
   title: string;
@@ -95,10 +107,16 @@ export interface GrievanceFilters {
   status?: string;
   category?: string;
   priority?: string;
+  assignedTo?: string;
+  userId?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
 }
 
+// ===========================
+// Pagination Types
+// ===========================
 export interface PaginatedResponse<T> {
   results: T[];
   page: number;
@@ -107,7 +125,9 @@ export interface PaginatedResponse<T> {
   totalResults: number;
 }
 
+// ===========================
 // Identity Verification Types
+// ===========================
 export interface Challenge {
   id: string;
   text: string;
@@ -134,7 +154,9 @@ export interface IdentityVerificationResult {
   recommendations?: string;
 }
 
+// ===========================
 // App Verification Types
+// ===========================
 export interface VerifyAppFileRequest {
   appFile: File;
 }
@@ -174,7 +196,48 @@ export interface AppVerificationResult {
   recommendations: string;
 }
 
+// ===========================
+// System/App Types
+// ===========================
+export interface SystemHealth {
+  status: 'ok' | 'degraded' | 'down';
+  timestamp: string;
+  services?: {
+    database?: 'ok' | 'down';
+    ml?: 'ok' | 'down';
+    storage?: 'ok' | 'down';
+  };
+}
+
+export interface SystemConfig {
+  environment: string;
+  version: string;
+  features: {
+    identityVerification: boolean;
+    appVerification: boolean;
+    voiceComplaints: boolean;
+    mlAnalysis: boolean;
+  };
+}
+
+export interface FeedbackRequest {
+  type: 'bug' | 'feature' | 'general';
+  subject: string;
+  message: string;
+  email?: string;
+}
+
+export interface SystemEnums {
+  grievanceCategories: string[];
+  grievancePriorities: string[];
+  grievanceStatuses: string[];
+  userRoles: string[];
+  languages: string[];
+}
+
+// ===========================
 // Error Types
+// ===========================
 export interface ApiError {
   code: number;
   message: string;
@@ -185,7 +248,9 @@ export interface ApiError {
   }>;
 }
 
+// ===========================
 // API Response Type
+// ===========================
 export interface ApiResponse<T = any> {
   data?: T;
   error?: ApiError;

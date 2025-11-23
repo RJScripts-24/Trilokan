@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Camera, Play, User as UserIcon, Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { identityService } from '../api';
 import { handleApiError, validateFile } from '../utils/errorHandler';
 import type { User, Challenge, IdentityVerificationResult } from '../types';
@@ -16,7 +17,21 @@ export function IdentityVerification({ user }: IdentityVerificationProps) {
   const [recordedVideo, setRecordedVideo] = useState<File | null>(null);
   const [voiceAudio, setVoiceAudio] = useState<File | null>(null);
   const [idDocument, setIdDocument] = useState<File | null>(null);
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  // Use React Query for challenge fetching
+  const {
+    data: challenge,
+    error: challengeError,
+    refetch: refetchChallenge,
+    isFetching: isChallengeFetching
+  } = useQuery({
+    queryKey: ['identity-challenge', user.isIdentityVerified],
+    queryFn: async () => {
+      if (user.isIdentityVerified) return null;
+      return await identityService.getChallenge();
+    },
+    enabled: !user.isIdentityVerified,
+    staleTime: 1000 * 60 * 2,
+  });
   const [verificationResult, setVerificationResult] = useState<IdentityVerificationResult | null>(null);
   const [error, setError] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -26,24 +41,7 @@ export function IdentityVerification({ user }: IdentityVerificationProps) {
   const videoChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Fetch challenge on component mount
-  useEffect(() => {
-    if (user.isIdentityVerified) {
-      // User already verified
-      return;
-    }
-    fetchChallenge();
-  }, [user.isIdentityVerified]);
-
-  const fetchChallenge = async () => {
-    try {
-      const challengeData = await identityService.getChallenge();
-      setChallenge(challengeData);
-    } catch (err) {
-      const errorResult = handleApiError(err);
-      setError(errorResult.message);
-    }
-  };
+  // Remove fetchChallenge and useEffect, use React Query instead
 
   const startCamera = async () => {
     try {
@@ -282,7 +280,7 @@ export function IdentityVerification({ user }: IdentityVerificationProps) {
                   setRecordedVideo(null);
                   setVoiceAudio(null);
                   setIdDocument(null);
-                  fetchChallenge();
+                  refetchChallenge();
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

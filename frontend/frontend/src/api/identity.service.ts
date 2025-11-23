@@ -1,31 +1,45 @@
 import apiClient from './client';
-import {
+import { API_ENDPOINTS, API_CONFIG } from '../config/api';
+import type {
   Challenge,
   VerifyIdentityRequest,
   IdentityVerificationResult,
 } from '../types';
 
-const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1';
-
+/**
+ * Identity Verification Service
+ * Handles all identity verification API calls
+ * Endpoints: /api/v1/identity/*
+ */
 export const identityService = {
   /**
    * Get liveness challenge
+   * GET /api/v1/identity/challenge
+   * Requires: Authentication
+   * @returns Challenge object with ID and text
    */
   getChallenge: async (): Promise<Challenge> => {
-    const response = await apiClient.get(`/api/${API_VERSION}/identity/challenge`);
+    const response = await apiClient.get(API_ENDPOINTS.IDENTITY.CHALLENGE);
     return response.data;
   },
 
   /**
    * Verify identity with multi-modal verification
+   * POST /api/v1/identity/verify
+   * Requires: Authentication
+   * Supports: Face video, voice audio, ID document uploads
+   * @param data - Verification data (faceVideo required, others optional)
+   * @returns Identity verification result
    */
   verifyIdentity: async (
     data: VerifyIdentityRequest
   ): Promise<IdentityVerificationResult> => {
     const formData = new FormData();
     
+    // Required field
     formData.append('faceVideo', data.faceVideo);
     
+    // Optional fields
     if (data.voiceAudio) {
       formData.append('voiceAudio', data.voiceAudio);
     }
@@ -39,13 +53,13 @@ export const identityService = {
     }
     
     const response = await apiClient.post(
-      `/api/${API_VERSION}/identity/verify`,
+      API_ENDPOINTS.IDENTITY.VERIFY,
       formData,
       {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 60000, // 60 seconds for ML processing
+        timeout: API_CONFIG.UPLOAD_TIMEOUT, // 60 seconds for ML processing
       }
     );
     
@@ -53,7 +67,12 @@ export const identityService = {
   },
 
   /**
-   * Verify identity with progress tracking
+   * Verify identity with upload progress tracking
+   * POST /api/v1/identity/verify (with progress callback)
+   * Requires: Authentication
+   * @param data - Verification data
+   * @param onProgress - Progress callback (0-100)
+   * @returns Identity verification result
    */
   verifyIdentityWithProgress: async (
     data: VerifyIdentityRequest,
@@ -61,8 +80,10 @@ export const identityService = {
   ): Promise<IdentityVerificationResult> => {
     const formData = new FormData();
     
+    // Required field
     formData.append('faceVideo', data.faceVideo);
     
+    // Optional fields
     if (data.voiceAudio) {
       formData.append('voiceAudio', data.voiceAudio);
     }
@@ -76,13 +97,13 @@ export const identityService = {
     }
     
     const response = await apiClient.post(
-      `/api/${API_VERSION}/identity/verify`,
+      API_ENDPOINTS.IDENTITY.VERIFY,
       formData,
       {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 60000,
+        timeout: API_CONFIG.UPLOAD_TIMEOUT,
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round(
@@ -95,6 +116,39 @@ export const identityService = {
     );
     
     return response.data;
+  },
+
+  /**
+   * Complete identity verification flow
+   * Helper method that gets challenge and verifies identity
+   * @param faceVideo - Face video file
+   * @param voiceAudio - Voice audio file (optional)
+   * @param idDocument - ID document file (optional)
+   * @param onProgress - Progress callback (optional)
+   * @returns Identity verification result
+   */
+  completeVerification: async (
+    faceVideo: File,
+    voiceAudio?: File,
+    idDocument?: File,
+    onProgress?: (progress: number) => void
+  ): Promise<IdentityVerificationResult> => {
+    // Get challenge first
+    const challenge = await identityService.getChallenge();
+    
+    // Verify with challenge
+    const verifyData: VerifyIdentityRequest = {
+      faceVideo,
+      voiceAudio,
+      idDocument,
+      challengeId: challenge.id,
+    };
+    
+    if (onProgress) {
+      return identityService.verifyIdentityWithProgress(verifyData, onProgress);
+    } else {
+      return identityService.verifyIdentity(verifyData);
+    }
   },
 };
 
