@@ -1,0 +1,17 @@
+{
+  "name": "trilokan-backend",
+  "version": "1.0.0",
+  "description": "Trilokan unified backend services",
+  "scripts": {
+    "start": "npm run start:all",
+    "start:all": "concurrently \"npm run start:gateway\" \"npm run start:complaint\" \"npm run start:crawler\" \"npm run start:identity\"",
+    "start:gateway": "cd api-gateway && npm install && npm start",
+    "start:complaint": "cd ml-services/complaint && pip install -r requirements.txt && python app.py",
+    "start:crawler": "cd ml-services/app-crawler && pip install -r requirements.txt && python app_api.py",
+    "start:identity": "cd ml-services/identity-verifier && pip install -r requirements.txt && python app.py",
+    "build": "cd api-gateway && npm install"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
