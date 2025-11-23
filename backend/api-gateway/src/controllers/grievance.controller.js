@@ -130,10 +130,58 @@ const getGrievanceStats = catchAsync(async (req, res) => {
   res.send(stats);
 });
 
+/**
+ * Delete Grievance
+ * DELETE /api/v1/grievances/:grievanceId
+ */
+const deleteGrievance = catchAsync(async (req, res) => {
+  await grievanceService.deleteGrievanceById(req.params.grievanceId);
+  res.status(httpStatus.NO_CONTENT).send();
+});
+
+/**
+ * Update Grievance Status
+ * PATCH /api/v1/grievances/:grievanceId/status
+ */
+const updateStatus = catchAsync(async (req, res) => {
+  const { status, notes } = req.body;
+  const grievance = await grievanceService.updateStatus(
+    req.params.grievanceId,
+    status,
+    req.user.id,
+    notes
+  );
+  
+  // Notify user of status change
+  const user = await grievance.getUser();
+  if (user) {
+    await emailService.sendGrievanceStatusUpdateEmail(user.email, grievance);
+  }
+
+  res.send(grievance);
+});
+
+/**
+ * Assign Grievance to Staff
+ * PATCH /api/v1/grievances/:grievanceId/assign
+ */
+const assignGrievance = catchAsync(async (req, res) => {
+  const { assignedTo } = req.body;
+  const grievance = await grievanceService.assignGrievance(
+    req.params.grievanceId,
+    assignedTo,
+    req.user.id
+  );
+  res.send(grievance);
+});
+
 module.exports = {
   createGrievance,
   getGrievances,
   getGrievance,
   updateGrievance,
   getGrievanceStats,
+  deleteGrievance,
+  updateStatus,
+  assignGrievance,
 };

@@ -8,6 +8,8 @@ const HealthChecker = require('../utils/health-checker');
 const CircuitBreaker = require('../utils/circuit-breaker');
 const RetryHandler = require('../utils/retry-handler');
 const { ResponseValidator } = require('../utils/response-validator');
+const { logMLServiceCall, logMLServiceResponse } = require('../middleware/correlation.middleware');
+const { recordMLRequest, recordMLError, updateCircuitBreakerState } = require('../utils/metrics');
 
 /**
  * ML Service Configuration
@@ -69,7 +71,7 @@ const retryHandler = new RetryHandler({
 /**
  * Create axios instance for a specific ML service with retry and circuit breaker
  */
-const createMLClient = (serviceName) => {
+const createMLClient = (serviceName, requestId = null) => {
   const serviceConfig = ML_SERVICES[serviceName];
   if (!serviceConfig) {
     throw new Error(`Unknown ML service: ${serviceName}`);
@@ -80,6 +82,8 @@ const createMLClient = (serviceName) => {
     timeout: 30000, // 30 seconds for ML operations
     headers: {
       'x-api-key': serviceConfig.apiKey,
+      // Propagate correlation ID to ML services
+      ...(requestId && { 'x-request-id': requestId }),
     },
   });
 
@@ -92,22 +96,42 @@ const createMLClient = (serviceName) => {
 /**
  * Execute ML request with circuit breaker and response validation
  */
-const executeMLRequest = async (serviceName, operation, requestFn) => {
+const executeMLRequest = async (serviceName, operation, requestFn, requestId = null, context = {}) => {
+  const startTime = Date.now();
+  
+  // Log ML service call with correlation ID
+  logMLServiceCall(serviceName, operation, requestId, context);
+  
   // Check if service is available
   if (!healthChecker.isServiceAvailable(serviceName)) {
-    logger.warn(
-      `Service ${serviceName} is marked as unavailable, returning degraded response`
-    );
+    const duration = Date.now() - startTime;
+    logger.warn({
+      message: `Service ${serviceName} is marked as unavailable, returning degraded response`,
+      requestId,
+      serviceName,
+      operation,
+    });
+    logMLServiceResponse(serviceName, operation, requestId, null, duration, new Error('Service unavailable'));
+    
+    // Record metrics
+    recordMLRequest(serviceName, operation, 'degraded', duration);
+    recordMLError(serviceName, operation, 'service_unavailable');
+    
     return healthChecker.getDegradedResponse(serviceName, operation);
   }
 
   // Execute with circuit breaker
   const circuitBreaker = circuitBreakers[serviceName];
   
+  // Update circuit breaker state metric
+  updateCircuitBreakerState(serviceName, circuitBreaker.getState());
+  
   try {
     const response = await circuitBreaker.execute(async () => {
       return await requestFn();
     });
+
+    const duration = Date.now() - startTime;
 
     // Validate response schema
     const validation = ResponseValidator.validateResponse(
@@ -117,24 +141,66 @@ const executeMLRequest = async (serviceName, operation, requestFn) => {
     );
 
     if (!validation.valid) {
-      logger.error(
-        `Invalid response from ${serviceName}/${operation}: ${validation.error}`
-      );
+      logger.error({
+        message: `Invalid response from ${serviceName}/${operation}: ${validation.error}`,
+        requestId,
+        serviceName,
+        operation,
+      });
+      
+      logMLServiceResponse(serviceName, operation, requestId, null, duration, new Error(validation.error));
+      
+      // Record metrics
+      recordMLRequest(serviceName, operation, 'error', duration);
+      recordMLError(serviceName, operation, 'invalid_response');
       
       // Return safe default instead of raw invalid response
       return ResponseValidator.getSafeDefault(serviceName, operation);
     }
 
+    logMLServiceResponse(serviceName, operation, requestId, validation.sanitized, duration);
+    
+    // Record successful request metrics
+    recordMLRequest(serviceName, operation, 'success', duration);
+    
     return validation.sanitized;
   } catch (error) {
+    const duration = Date.now() - startTime;
+    
     if (error.message.includes('Circuit breaker is OPEN')) {
       // Circuit is open, return degraded response
-      logger.warn(`Circuit breaker open for ${serviceName}, returning degraded response`);
+      logger.warn({
+        message: `Circuit breaker open for ${serviceName}, returning degraded response`,
+        requestId,
+        serviceName,
+        operation,
+      });
+      logMLServiceResponse(serviceName, operation, requestId, null, duration, error);
+      
+      // Update circuit breaker state
+      updateCircuitBreakerState(serviceName, 'OPEN');
+      
+      // Record metrics
+      recordMLRequest(serviceName, operation, 'circuit_open', duration);
+      recordMLError(serviceName, operation, 'circuit_breaker_open');
+      
       return healthChecker.getDegradedResponse(serviceName, operation);
     }
 
     // Other errors - log and return degraded response
-    logger.error(`ML Service Error (${serviceName}/${operation}): ${error.message}`);
+    logger.error({
+      message: `ML Service Error (${serviceName}/${operation}): ${error.message}`,
+      requestId,
+      serviceName,
+      operation,
+      error: error.message,
+    });
+    logMLServiceResponse(serviceName, operation, requestId, null, duration, error);
+    
+    // Record error metrics
+    recordMLRequest(serviceName, operation, 'error', duration);
+    recordMLError(serviceName, operation, error.response?.status ? `http_${error.response.status}` : 'network_error');
+    
     return healthChecker.getDegradedResponse(serviceName, operation);
   }
 };
@@ -154,13 +220,14 @@ const mlClient = axios.create({
  * Analyze grievance/complaint text and return categories
  * Maps to complaint service /api/v1/categorize
  * @param {string} text - The grievance text to analyze
+ * @param {string} requestId - Correlation ID for tracing
  * @returns {Promise<Object>} - Standardized response with categories
  */
-const analyzeGrievanceText = async (text) => {
+const analyzeGrievanceText = async (text, requestId = null) => {
   return executeMLRequest('complaint', 'categorize', async () => {
-    const client = createMLClient('complaint');
+    const client = createMLClient('complaint', requestId);
     return await client.post('/api/v1/categorize', { text });
-  });
+  }, requestId, { text });
 };
 
 /**
@@ -168,18 +235,19 @@ const analyzeGrievanceText = async (text) => {
  * Maps to complaint service /transcribe
  * @param {Buffer|Stream} audioFile - Audio file buffer or stream
  * @param {string} filename - Original filename
+ * @param {string} requestId - Correlation ID for tracing
  * @returns {Promise<Object>} - Transcription result
  */
-const transcribeAudio = async (audioFile, filename = 'audio.mp3') => {
+const transcribeAudio = async (audioFile, filename = 'audio.mp3', requestId = null) => {
   return executeMLRequest('complaint', 'transcribe', async () => {
-    const client = createMLClient('complaint');
+    const client = createMLClient('complaint', requestId);
     const formData = new FormData();
     formData.append('audio', audioFile, filename);
 
     return await client.post('/transcribe', formData, {
       headers: formData.getHeaders(),
     });
-  });
+  }, requestId, { audioFile, filename });
 };
 
 /**
@@ -187,29 +255,31 @@ const transcribeAudio = async (audioFile, filename = 'audio.mp3') => {
  * Maps to complaint service /detect/deepfake
  * @param {Buffer|Stream} videoFile - Video file buffer or stream
  * @param {string} filename - Original filename
+ * @param {string} requestId - Correlation ID for tracing
  * @returns {Promise<Object>} - Deepfake detection result
  */
-const detectDeepfake = async (videoFile, filename = 'video.mp4') => {
+const detectDeepfake = async (videoFile, filename = 'video.mp4', requestId = null) => {
   return executeMLRequest('complaint', 'deepfake', async () => {
-    const client = createMLClient('complaint');
+    const client = createMLClient('complaint', requestId);
     const formData = new FormData();
     formData.append('video', videoFile, filename);
 
     return await client.post('/detect/deepfake', formData, {
       headers: formData.getHeaders(),
     });
-  });
+  }, requestId, { videoFile, filename });
 };
 
 /**
  * Verify identity using multi-modal verification
  * Maps to identity-verifier service /verify
  * @param {Object} files - Object containing video, audio, document files
+ * @param {string} requestId - Correlation ID for tracing
  * @returns {Promise<Object>} - Identity verification result
  */
-const verifyIdentity = async (files) => {
+const verifyIdentity = async (files, requestId = null) => {
   return executeMLRequest('identity', 'verify', async () => {
-    const client = createMLClient('identity');
+    const client = createMLClient('identity', requestId);
     const formData = new FormData();
 
     if (files.video) {
@@ -225,18 +295,19 @@ const verifyIdentity = async (files) => {
     return await client.post('/verify', formData, {
       headers: formData.getHeaders(),
     });
-  });
+  }, requestId, { files });
 };
 
 /**
  * Verify app safety (APK analysis)
  * Maps to app-crawler service /app/verify
  * @param {Object} params - Object containing packageName, playstoreLink, or apkFile
+ * @param {string} requestId - Correlation ID for tracing
  * @returns {Promise<Object>} - App verification result
  */
-const verifyApp = async (params) => {
+const verifyApp = async (params, requestId = null) => {
   return executeMLRequest('appCrawler', 'verify', async () => {
-    const client = createMLClient('appCrawler');
+    const client = createMLClient('appCrawler', requestId);
     const formData = new FormData();
 
     if (params.packageName) {
@@ -252,7 +323,7 @@ const verifyApp = async (params) => {
     return await client.post('/app/verify', formData, {
       headers: formData.getHeaders(),
     });
-  });
+  }, requestId, { params });
 };
 
 /**

@@ -7,6 +7,42 @@ const fs = require('fs');
 const logger = require('../config/logger');
 
 /**
+ * Health Check
+ * GET /api/v1/app/health
+ */
+const healthCheck = catchAsync(async (req, res) => {
+  const health = await appService.getSystemHealth();
+  res.status(httpStatus.OK).send(health);
+});
+
+/**
+ * Get App Configuration
+ * GET /api/v1/app/config
+ */
+const getAppConfig = catchAsync(async (req, res) => {
+  const config = await appService.getAppConfig();
+  res.status(httpStatus.OK).send(config);
+});
+
+/**
+ * Submit Feedback
+ * POST /api/v1/app/feedback
+ */
+const submitFeedback = catchAsync(async (req, res) => {
+  const feedback = await appService.createFeedback(req.body, req.user.id);
+  res.status(httpStatus.CREATED).send(feedback);
+});
+
+/**
+ * Get System Enums
+ * GET /api/v1/app/enums
+ */
+const getEnums = catchAsync(async (req, res) => {
+  const enums = await appService.getEnums();
+  res.status(httpStatus.OK).send(enums);
+});
+
+/**
  * Verify an App by Uploading the APK file
  * POST /api/v1/apps/verify-file
  * * Expects 'multipart/form-data' with key 'appFile'
@@ -323,6 +359,10 @@ const reportSuspiciousApp = catchAsync(async (req, res) => {
 });
 
 module.exports = {
+  healthCheck,
+  getAppConfig,
+  submitFeedback,
+  getEnums,
   verifyAppFile,
   verifyAppPackage,
   reportSuspiciousApp

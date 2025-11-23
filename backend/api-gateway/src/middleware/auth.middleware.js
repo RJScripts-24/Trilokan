@@ -1,6 +1,7 @@
 const passport = require('passport');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
+const { setUserContext } = require('./correlation.middleware');
 
 /**
  * Custom Callback for Passport
@@ -16,7 +17,10 @@ const verifyCallback = (req, resolve, reject, requiredRoles) => async (err, user
   // Now your controllers can access `req.user`
   req.user = user;
 
-  // 3. Role-Based Access Control (RBAC)
+  // 3. Update correlation context with user info
+  setUserContext(req, user);
+
+  // 4. Role-Based Access Control (RBAC)
   // If the route requires specific roles (e.g., ['admin', 'official'])
   // we check if the logged-in user has one of those roles.
   if (requiredRoles.length) {
@@ -27,6 +31,7 @@ const verifyCallback = (req, resolve, reject, requiredRoles) => async (err, user
   }
 
   resolve();
+};
 };
 
 /**

@@ -1,0 +1,556 @@
+openapi: 3.0.3
+info:
+  title: Trilokan ML Services API
+  description: |
+    Machine Learning microservices for digital trust and fraud detection.
+    
+    ## Services
+    - **Complaint ML Service** (Port 5000): NLP, categorization, transcription, deepfake detection
+    - **App Crawler Service** (Port 5001): APK verification and app safety analysis
+    - **Identity Verifier Service** (Port 5002): Multi-modal identity verification
+    
+    ## Authentication
+    All endpoints require `x-api-key` header for authentication.
+    
+    ## Integration
+    These services are typically accessed through the API Gateway (Port 3000), but can be called directly for advanced use cases.
+    
+  version: 1.0.0
+  contact:
+    name: Trilokan ML Team
+    email: ml-support@trilokan.com
+
+servers:
+  - url: http://localhost:5000
+    description: Complaint ML Service (Local)
+  - url: http://localhost:5001
+    description: App Crawler Service (Local)
+  - url: http://localhost:5002
+    description: Identity Verifier Service (Local)
+
+tags:
+  - name: Complaint ML
+    description: NLP and complaint analysis
+  - name: App Crawler
+    description: APK and app verification
+  - name: Identity Verifier
+    description: Multi-modal identity verification
+  - name: Health
+    description: Service health checks
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # ==================== Complaint ML Service (Port 5000) ====================
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check (All services)
+      description: Verify service is running and healthy
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: complaint-ml
+                  version:
+                    type: string
+                    example: 1.0.0
+                  uptime:
+                    type: number
+                    example: 86400
+
+  /api/v1/categorize:
+    post:
+      tags:
+        - Complaint ML
+      summary: Categorize complaint text
+      description: Use NLP to automatically categorize complaint text into predefined categories
+      servers:
+        - url: http://localhost:5000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Complaint text to categorize
+                  example: "I received a fraudulent call from someone claiming to be from my bank"
+                returnTopK:
+                  type: integer
+                  description: Number of top categories to return
+                  default: 3
+                  minimum: 1
+                  maximum: 10
+      responses:
+        '200':
+          description: Categorization successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: "Financial Fraud"
+                        confidence:
+                          type: number
+                          format: float
+                          example: 0.92
+                        description:
+                          type: string
+                          example: "Fraud related to banking and financial services"
+                  sentiment:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        enum: [positive, neutral, negative]
+                        example: negative
+                      score:
+                        type: number
+                        example: 0.85
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        text:
+                          type: string
+                          example: "bank"
+                        type:
+                          type: string
+                          example: "ORG"
+                        start:
+                          type: integer
+                        end:
+                          type: integer
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transcribe:
+    post:
+      tags:
+        - Complaint ML
+      summary: Transcribe audio to text
+      description: Convert audio files to text using speech recognition
+      servers:
+        - url: http://localhost:5000
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audio
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio file (MP3, WAV, M4A, etc.)
+                language:
+                  type: string
+                  description: Language code (e.g., 'en', 'hi', 'ta')
+                  default: 'en'
+                  example: 'en'
+      responses:
+        '200':
+          description: Transcription successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    example: "I want to file a complaint about fraudulent activity"
+                  language:
+                    type: string
+                    example: "en"
+                  confidence:
+                    type: number
+                    example: 0.96
+                  duration:
+                    type: number
+                    description: Audio duration in seconds
+                    example: 12.5
+        '400':
+          description: Invalid audio file
+        '401':
+          description: Unauthorized
+
+  /detect/deepfake:
+    post:
+      tags:
+        - Complaint ML
+      summary: Detect deepfake in video
+      description: Analyze video to detect AI-generated deepfakes
+      servers:
+        - url: http://localhost:5000
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - video
+              properties:
+                video:
+                  type: string
+                  format: binary
+                  description: Video file to analyze
+                sensitivity:
+                  type: string
+                  enum: [low, medium, high]
+                  default: medium
+                  description: Detection sensitivity level
+      responses:
+        '200':
+          description: Analysis complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isDeepfake:
+                    type: boolean
+                    example: false
+                  confidence:
+                    type: number
+                    example: 0.98
+                  details:
+                    type: object
+                    properties:
+                      faceManipulation:
+                        type: number
+                        example: 0.05
+                      lipSyncScore:
+                        type: number
+                        example: 0.95
+                      inconsistencies:
+                        type: array
+                        items:
+                          type: string
+                        example: []
+                  processingTime:
+                    type: number
+                    description: Processing time in seconds
+                    example: 3.2
+
+  # ==================== App Crawler Service (Port 5001) ====================
+  /app/verify:
+    post:
+      tags:
+        - App Crawler
+      summary: Verify app safety
+      description: Analyze APK or app package for safety and authenticity
+      servers:
+        - url: http://localhost:5001
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                apkFile:
+                  type: string
+                  format: binary
+                  description: APK file to analyze
+                packageName:
+                  type: string
+                  description: Android package name (e.g., com.example.app)
+                  example: com.whatsapp
+                playstoreLink:
+                  type: string
+                  description: Google Play Store URL
+                  example: https://play.google.com/store/apps/details?id=com.whatsapp
+      responses:
+        '200':
+          description: Verification complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isSafe:
+                    type: boolean
+                    example: true
+                  trustScore:
+                    type: number
+                    format: float
+                    example: 0.95
+                  analysis:
+                    type: object
+                    properties:
+                      packageName:
+                        type: string
+                        example: com.whatsapp
+                      appName:
+                        type: string
+                        example: WhatsApp Messenger
+                      version:
+                        type: string
+                        example: 2.23.20.0
+                      developer:
+                        type: string
+                        example: WhatsApp LLC
+                      isOfficial:
+                        type: boolean
+                        example: true
+                      permissions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            risk:
+                              type: string
+                              enum: [low, medium, high]
+                      malwareDetected:
+                        type: boolean
+                        example: false
+                      signatures:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                          issuer:
+                            type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                    example: []
+                  recommendations:
+                    type: string
+                    example: "App is safe to use"
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+  # ==================== Identity Verifier Service (Port 5002) ====================
+  /verify:
+    post:
+      tags:
+        - Identity Verifier
+      summary: Verify identity (Basic)
+      description: Basic identity verification endpoint
+      servers:
+        - url: http://localhost:5002
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video:
+                  type: string
+                  format: binary
+                  description: Face video for liveness check
+                audio:
+                  type: string
+                  format: binary
+                  description: Voice audio sample
+                document:
+                  type: string
+                  format: binary
+                  description: ID document image
+      responses:
+        '200':
+          description: Verification complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                  confidence:
+                    type: number
+                  results:
+                    type: object
+                    properties:
+                      faceMatch:
+                        type: number
+                      voiceMatch:
+                        type: number
+                      documentValid:
+                        type: boolean
+                      livenessScore:
+                        type: number
+
+  /verify/identity:
+    post:
+      tags:
+        - Identity Verifier
+      summary: Verify identity (Advanced - Phase 2)
+      description: Advanced multi-modal identity verification with enhanced features
+      servers:
+        - url: http://localhost:5002
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - faceVideo
+              properties:
+                faceVideo:
+                  type: string
+                  format: binary
+                  description: Face video for liveness and matching
+                voiceAudio:
+                  type: string
+                  format: binary
+                  description: Voice sample for verification
+                idDocument:
+                  type: string
+                  format: binary
+                  description: ID document (Aadhaar, PAN, Passport, etc.)
+                challengeResponse:
+                  type: string
+                  description: User's response to liveness challenge
+                  example: "smile"
+      responses:
+        '200':
+          description: Verification complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                    example: true
+                  overallConfidence:
+                    type: number
+                    example: 0.94
+                  biometricResults:
+                    type: object
+                    properties:
+                      faceVerification:
+                        type: object
+                        properties:
+                          match:
+                            type: boolean
+                          confidence:
+                            type: number
+                          livenessDetected:
+                            type: boolean
+                          livenessScore:
+                            type: number
+                      voiceVerification:
+                        type: object
+                        properties:
+                          match:
+                            type: boolean
+                          confidence:
+                            type: number
+                          spoofDetected:
+                            type: boolean
+                      documentVerification:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                          documentType:
+                            type: string
+                          extractedData:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              documentNumber:
+                                type: string
+                              dateOfBirth:
+                                type: string
+                          tamperingDetected:
+                            type: boolean
+                  riskFactors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        severity:
+                          type: string
+                          enum: [low, medium, high]
+                        description:
+                          type: string
+                  recommendations:
+                    type: string
+                    example: "Identity verified successfully"
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for ML service authentication
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      headers:
+        WWW_Authenticate:
+          schema:
+            type: string

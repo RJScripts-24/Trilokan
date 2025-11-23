@@ -25,6 +25,7 @@ db.Token = require('./token.model')(sequelize, Sequelize);
 db.App = require('./app.model')(sequelize, Sequelize);
 db.Grievance = require('./grievance.model')(sequelize, Sequelize);
 db.GrievanceLog = require('./grievance_log.model')(sequelize, Sequelize);
+db.FileUpload = require('./fileupload.model')(sequelize, Sequelize);
 
 // 3. Define Associations (Relationships)
 
@@ -47,6 +48,11 @@ db.GrievanceLog.belongsTo(db.Grievance, { foreignKey: 'grievanceId' });
 // A User (Reporter) might report a suspicious App
 db.User.hasMany(db.App, { foreignKey: 'reporterId', as: 'reportedApps' });
 db.App.belongsTo(db.User, { foreignKey: 'reporterId', as: 'reporter' });
+
+// --- File Upload Relationships ---
+// A User can upload many files
+db.User.hasMany(db.FileUpload, { foreignKey: 'uploadedBy', as: 'uploads' });
+db.FileUpload.belongsTo(db.User, { foreignKey: 'uploadedBy', as: 'uploader' });
 
 // 4. Export
 db.sequelize = sequelize;
