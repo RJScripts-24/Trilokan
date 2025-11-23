@@ -224,6 +224,40 @@ Or change the port in the service's `.env` file.
 2. Verify database credentials in `.env`
 3. Run migrations: `npm run db:migrate`
 
+## API Documentation
+
+Interactive API documentation is available via Swagger UI:
+
+```bash
+# Start API Gateway
+cd api-gateway
+npm start
+
+# Access Swagger UI in browser
+http://localhost:3000/api/v1/docs
+```
+
+**Documentation Files:**
+- `api-gateway/openapi.yaml` - Complete OpenAPI 3.0 specification for API Gateway
+- `ml-services/openapi-ml.yaml` - OpenAPI specification for ML services
+- `SECURITY_POSTURE.md` - Comprehensive security analysis and recommendations
+
+**Features:**
+- Interactive "Try it out" for all endpoints
+- Request/response schema validation
+- Authentication support (JWT Bearer, API Key)
+- Example payloads and responses
+- Export to Postman/Insomnia
+
+## Documentation
+
+- `README.md` - This file (project overview and quick start)
+- `DEV_SETUP.md` - Detailed development environment setup
+- `TESTING_GUIDE.md` - Comprehensive testing procedures
+- `SECURITY_POSTURE.md` - Security analysis and authentication architecture
+- `PRIORITY4_QUICK_REFERENCE.md` - Quick reference for Priority 4 deliverables
+- `PRIORITY4_SUMMARY.md` - Executive summary of cleanup and documentation tasks
+
 ## License
 
 MIT

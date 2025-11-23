@@ -31,7 +31,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-package-lock.json
+# package-lock.json  # KEEP TRACKED for dependency consistency
 yarn.lock
 pnpm-lock.yaml
 
@@ -410,3 +410,349 @@ debug-*.log
 .idea/workspace.xml
 profile.json
 memory-profile.json
+
+# ====================================
+# NPM/Yarn/PNPM
+# ====================================
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# PNPM
+.pnpm-debug.log*
+# Docker volume data (if running locally)
+postgres_data/
+postgres_dev_data/
+prometheus_data/
+grafana_data/
+redis_data/
+
+# ====================================
+# Monitoring & Metrics
+# ====================================
+# Prometheus data
+prometheus/data/
+# Grafana database
+grafana.db
+
+# ====================================
+# Local Development
+# ====================================
+# Local override configs
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+config.local.js
+config.local.json
+
+# Local scripts
+scripts/local/
+*.local.sh
+*.local.ps1
+
+# ====================================
+# Test & Coverage Reports
+# ====================================
+# Jest
+jest-results.json
+.jest/
+
+# Mocha/Chai
+.mocha/
+mochawesome-report/
+
+# NYC/Istanbul
+.nyc_output/
+coverage.json
+
+# ====================================
+# Generated Files
+# ====================================
+# Auto-generated documentation
+docs/api/generated/
+openapi-generated/
+
+# Compiled translations
+locales/compiled/
+
+# ====================================
+# Sensitive Data Files
+# ====================================
+# SSH keys
+*.pem
+*.ppk
+id_rsa*
+id_ed25519*
+
+# SSL Certificates (local dev)
+certs/
+*.crt
+*.cert
+*.ca-bundle
+
+# Personal notes
+NOTES.md
+TODO.personal.md
+.scratch/
+
+# ====================================
+# Cloud & Deployment
+# ====================================
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+
+# AWS
+.aws/
+aws-exports.js
+
+# Azure
+.azure/
+azure.json
+
+# Google Cloud
+.gcloud/
+gcloud-key.json
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# ====================================
+# Temporary Working Files
+# ====================================
+# Editor temp files
+*~
+*.swp
+*.swo
+*.swn
+.*.sw*
+
+# Merge files
+*.orig
+*.merge
+
+# Patch files
+*.patch
+*.diff
+
+# ====================================
+# NPM/Yarn/PNPM
+# ====================================
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# PNPM
+.pnpm-debug.log*
+
+# ====================================
+# Docker Volumes & Data
+# ====================================
+# Pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# ====================================
+# Machine Learning Specific
+# ====================================
+# TensorBoard logs
+events.out.tfevents.*
+
+# Weights & Biases
+wandb/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# DVC
+.dvc/
+*.dvc
+
+# Model checkpoints
+*.ckpt
+*.pth.tar
+best_model.*
+checkpoint_*
+
+# ====================================
+# IDE-Specific Temporary Files
+# ====================================
+# VS Code workspace storage
+.vscode/storage/
+
+# JetBrains IDEs
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# ====================================
+# OS-Specific Additional
+# ====================================
+# Windows
+*.stackdump
+Thumbs.db:encryptable
+ehthumbs_vista.db
+
+# macOS
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+.fuse_hidden*
+.nfs*
+
+# ====================================
+# Project-Specific Generated Files
+# ====================================
+# Migration rollback files
+db/migrations/rollback_*
+
+# Seeder output
+db/seeders/output/
+
+# Test data dumps
+test-data-*.json
+test-database.sqlite
+
+# Performance profiles
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# ====================================
+# Security & Secrets
+# ====================================
+# Secret scanning results
+.secrets/
+secrets.baseline
+.gitleaks.toml
+
+# Environment variable exports
+.envrc.local
+
+# Password files
+passwords.txt
+credentials.txt
+
+# ====================================
+# Build & Compilation
+# ====================================
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Webpack
+webpack-stats.json
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+dist/
+
+# Gatsby
+.cache/
+public/
+
+# Vuepress
+.vuepress/dist/
+
+# ====================================
+# Miscellaneous Additional
+# ====================================
+# Storybook
+storybook-static/
+
+# Lerna
+lerna-debug.log
+
+# Rush
+common/temp/
+common/deploy/
+
+# Serverless
+.serverless/
+
+# FuseBox
+.fusebox/
+
+# DynamoDB Local
+.dynamodb/
+
+# TernJS
+.tern-port
+
+# Stores VSCode versions
+.vscode-test
+
+# ====================================
+# End of .gitignore
+# ====================================

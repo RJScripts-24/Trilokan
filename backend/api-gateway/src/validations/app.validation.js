@@ -31,7 +31,46 @@ const getAppConfig = {
   }),
 };
 
+/**
+ * Validation for verifying app by package name or Play Store link
+ */
+const verifyPackage = {
+  body: Joi.object().keys({
+    packageName: Joi.string().trim().optional().messages({
+      'string.empty': 'Package name cannot be empty',
+    }),
+    playstoreLink: Joi.string().uri().trim().optional().messages({
+      'string.uri': 'Play Store link must be a valid URL',
+    }),
+  }).or('packageName', 'playstoreLink').messages({
+    'object.missing': 'Either packageName or playstoreLink must be provided',
+  }),
+};
+
+/**
+ * Validation for reporting suspicious app
+ */
+const reportSuspicious = {
+  body: Joi.object().keys({
+    appName: Joi.string().required().trim().min(2).max(100).messages({
+      'string.empty': 'App name is required',
+      'string.min': 'App name must be at least 2 characters',
+      'string.max': 'App name cannot exceed 100 characters',
+    }),
+    packageName: Joi.string().trim().optional(),
+    playstoreLink: Joi.string().uri().trim().optional(),
+    reason: Joi.string().required().min(10).max(1000).trim().messages({
+      'string.empty': 'Reason is required',
+      'string.min': 'Reason must be at least 10 characters',
+      'string.max': 'Reason cannot exceed 1000 characters',
+    }),
+    description: Joi.string().optional().max(2000).trim(),
+  }),
+};
+
 module.exports = {
   submitFeedback,
   getAppConfig,
+  verifyPackage,
+  reportSuspicious,
 };

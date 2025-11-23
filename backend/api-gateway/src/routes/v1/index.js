@@ -5,6 +5,7 @@ const identityRoute = require('./identity.routes');
 const appRoute = require('./app.routes');
 const grievanceRoute = require('./grievance.routes');
 const mlRoute = require('./ml.routes');
+const docsRoute = require('./docs.routes');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -40,7 +41,12 @@ const defaultRoutes = [
     path: '/ml',
     route: mlRoute,
     // Maps to: Legacy ML service endpoints (compatibility layer)
-    // TODO: Mark as deprecated
+    // DEPRECATED: Use new endpoints instead
+  },
+  {
+    path: '/docs',
+    route: docsRoute,
+    // Maps to: GET /api/v1/docs (OpenAPI/Swagger Documentation)
   },
 ];
 
@@ -48,12 +54,5 @@ const defaultRoutes = [
 defaultRoutes.forEach((route) => {
   router.use(route.path, route.route);
 });
-
-/* * Optional: Dev Routes (Only available in development mode)
- * Useful for swagger docs or testing tools.
- */
-if (config.env === 'development') {
-  // router.use('/docs', docsRoute); 
-}
 
 module.exports = router;

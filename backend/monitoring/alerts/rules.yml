@@ -1,0 +1,171 @@
+# Trilokan Platform Alert Rules
+
+groups:
+  - name: api_gateway_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          rate(trilokan_gateway_http_requests_total{status_code=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: api-gateway
+        annotations:
+          summary: "High error rate detected"
+          description: "API Gateway is experiencing {{ $value }} errors per second for {{ $labels.route }}"
+
+      # ML service high latency
+      - alert: MLServiceHighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            rate(trilokan_gateway_ml_request_duration_seconds_bucket[5m])
+          ) > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: ml-services
+        annotations:
+          summary: "ML service {{ $labels.service }} has high latency"
+          description: "95th percentile latency is {{ $value }}s for {{ $labels.service }}/{{ $labels.operation }}"
+
+      # Circuit breaker open
+      - alert: CircuitBreakerOpen
+        expr: |
+          trilokan_gateway_circuit_breaker_state{state="1"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: ml-services
+        annotations:
+          summary: "Circuit breaker open for {{ $labels.service }}"
+          description: "Circuit breaker is open for {{ $labels.service }}, indicating repeated failures"
+
+      # High ML error rate
+      - alert: HighMLErrorRate
+        expr: |
+          rate(trilokan_gateway_ml_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: ml-services
+        annotations:
+          summary: "High ML service error rate"
+          description: "ML service {{ $labels.service }} is experiencing {{ $value }} errors per second"
+
+      # Too many active requests (potential DoS)
+      - alert: TooManyActiveRequests
+        expr: |
+          trilokan_gateway_active_requests > 100
+        for: 1m
+        labels:
+          severity: warning
+          component: api-gateway
+        annotations:
+          summary: "Too many active requests"
+          description: "API Gateway has {{ $value }} active requests, potential DoS or performance issue"
+
+      # High authentication failure rate
+      - alert: HighAuthFailureRate
+        expr: |
+          rate(trilokan_gateway_auth_attempts_total{status="failed"}[5m]) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} failed authentication attempts per second, possible brute force attack"
+
+      # Service down
+      - alert: ServiceDown
+        expr: |
+          up{job=~"api-gateway|complaint-ml|app-crawler|identity-verifier"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (process_resident_memory_bytes / 1024 / 1024) > 1024
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage in {{ $labels.job }}"
+          description: "{{ $labels.job }} is using {{ $value }}MB of memory"
+
+      # Database connection pool exhaustion
+      - alert: DBConnectionPoolExhausted
+        expr: |
+          trilokan_gateway_db_connection_pool_size >= 20
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Connection pool has {{ $value }} connections, approaching limit"
+
+  - name: ml_service_health
+    interval: 1m
+    rules:
+      # ML service unavailable
+      - alert: MLServiceUnavailable
+        expr: |
+          trilokan_gateway_ml_requests_total{status="error"} > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ml-services
+        annotations:
+          summary: "ML service {{ $labels.service }} unavailable"
+          description: "ML service {{ $labels.service }} has returned errors for {{ $labels.operation }}"
+
+      # Degraded responses being served
+      - alert: DegradedResponsesServed
+        expr: |
+          rate(trilokan_gateway_ml_requests_total{status="degraded"}[5m]) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+          component: ml-services
+        annotations:
+          summary: "Degraded responses being served"
+          description: "{{ $value }} degraded responses per second from {{ $labels.service }}"
+
+  - name: business_metrics
+    interval: 1m
+    rules:
+      # Low categorization confidence
+      - alert: LowCategorizationConfidence
+        expr: |
+          histogram_quantile(0.5,
+            rate(trilokan_gateway_ml_request_duration_seconds_bucket{operation="categorize"}[10m])
+          ) > 5
+        for: 5m
+        labels:
+          severity: info
+          component: ml-services
+        annotations:
+          summary: "Categorization taking longer than usual"
+          description: "Median categorization time is {{ $value }}s, may indicate model issues"
+
+      # Spike in identity verification failures
+      - alert: IdentityVerificationFailureSpike
+        expr: |
+          rate(trilokan_gateway_ml_requests_total{service="identity", status="success"}[5m]) < 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: ml-services
+        annotations:
+          summary: "Low identity verification success rate"
+          description: "Identity verification success rate dropped to {{ $value }}"

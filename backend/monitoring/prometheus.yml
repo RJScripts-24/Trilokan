@@ -1,0 +1,57 @@
+# Prometheus Configuration for Trilokan Platform
+
+global:
+  scrape_interval: 15s # Scrape targets every 15 seconds
+  evaluation_interval: 15s # Evaluate rules every 15 seconds
+  external_labels:
+    cluster: 'trilokan-dev'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - 'alertmanager:9093' # Uncomment when alertmanager is added
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # API Gateway metrics
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ML Services (if they expose metrics)
+  - job_name: 'complaint-ml'
+    static_configs:
+      - targets: ['complaint-ml:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'app-crawler'
+    static_configs:
+      - targets: ['app-crawler:5001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'identity-verifier'
+    static_configs:
+      - targets: ['identity-verifier:5002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # PostgreSQL exporter (if added)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']

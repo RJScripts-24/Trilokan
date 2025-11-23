@@ -1,0 +1,987 @@
+openapi: 3.0.3
+info:
+  title: Trilokan Digital Trust & Cyber Fraud Detection API
+  description: |
+    Comprehensive API for digital trust verification, fraud detection, and grievance management system.
+    
+    ## Features
+    - Multi-modal identity verification (face, voice, document)
+    - App safety verification (APK scanning)
+    - AI-powered grievance categorization and management
+    - Real-time deepfake detection
+    - Audio transcription and sentiment analysis
+    
+    ## Authentication
+    Most endpoints require JWT bearer token authentication. ML service endpoints require `x-api-key` header.
+    
+    ## Rate Limiting
+    API implements rate limiting to prevent abuse. Standard limits: 100 requests per 15 minutes per IP.
+    
+  version: 1.0.0
+  contact:
+    name: Trilokan API Support
+    email: support@trilokan.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://api.trilokan.com
+    description: Production server
+  - url: https://staging-api.trilokan.com
+    description: Staging server
+
+tags:
+  - name: Authentication
+    description: User registration, login, and token management
+  - name: Identity Verification
+    description: Multi-modal identity verification endpoints
+  - name: Grievances
+    description: Complaint/grievance submission and management
+  - name: App Verification
+    description: APK and app safety verification
+  - name: Users
+    description: User profile and management
+  - name: ML Services (Legacy)
+    description: Deprecated ML service endpoints (use new endpoints instead)
+  - name: System
+    description: Health checks and system configuration
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  # ==================== Health & System ====================
+  /:
+    get:
+      tags:
+        - System
+      summary: Root endpoint
+      description: Simple health check to verify API is running
+      security: []
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API Gateway is running.
+                  requestId:
+                    type: string
+                    format: uuid
+                    example: 123e4567-e89b-12d3-a456-426614174000
+
+  /health:
+    get:
+      tags:
+        - System
+      summary: Enhanced health check
+      description: Comprehensive health status including ML services availability
+      security: []
+      responses:
+        '200':
+          description: System health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  uptime:
+                    type: number
+                    example: 86400
+                  timestamp:
+                    type: string
+                    format: date-time
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: connected
+                      mlComplaint:
+                        type: string
+                        example: healthy
+                      mlIdentity:
+                        type: string
+                        example: healthy
+                      mlAppCrawler:
+                        type: string
+                        example: healthy
+
+  /metrics:
+    get:
+      tags:
+        - System
+      summary: Prometheus metrics
+      description: Prometheus-compatible metrics for monitoring
+      security: []
+      responses:
+        '200':
+          description: Metrics in Prometheus format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  # ==================== Authentication ====================
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                  description: Must be at least 8 characters with uppercase, lowercase, and number
+                name:
+                  type: string
+                  example: John Doe
+                phoneNumber:
+                  type: string
+                  example: "+919876543210"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tokens:
+                    $ref: '#/components/schemas/AuthTokens'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tokens:
+                    $ref: '#/components/schemas/AuthTokens'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '204':
+          description: Logout successful
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/auth/refresh-tokens:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== Identity Verification ====================
+  /api/v1/identity/challenge:
+    get:
+      tags:
+        - Identity Verification
+      summary: Get verification challenge
+      description: Retrieve a random liveness challenge for identity verification
+      responses:
+        '200':
+          description: Challenge generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    type: string
+                    example: "Please smile"
+                  challengeId:
+                    type: string
+                    format: uuid
+                  expiresAt:
+                    type: string
+                    format: date-time
+
+  /api/v1/identity/verify:
+    post:
+      tags:
+        - Identity Verification
+      summary: Verify identity
+      description: Multi-modal identity verification using face video, voice audio, and ID document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                faceVideo:
+                  type: string
+                  format: binary
+                  description: Video file for face verification
+                voiceAudio:
+                  type: string
+                  format: binary
+                  description: Audio file for voice verification
+                idDocument:
+                  type: string
+                  format: binary
+                  description: ID document image (Aadhaar, PAN, Passport, etc.)
+                challengeId:
+                  type: string
+                  format: uuid
+                  description: Challenge ID from /challenge endpoint
+      responses:
+        '200':
+          description: Verification complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                    example: true
+                  confidence:
+                    type: number
+                    format: float
+                    example: 0.95
+                  results:
+                    type: object
+                    properties:
+                      faceMatch:
+                        type: number
+                        example: 0.98
+                      voiceMatch:
+                        type: number
+                        example: 0.92
+                      documentVerified:
+                        type: boolean
+                        example: true
+                      livenessScore:
+                        type: number
+                        example: 0.96
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Low lighting detected in video"]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== Grievances ====================
+  /api/v1/grievances:
+    get:
+      tags:
+        - Grievances
+      summary: List grievances
+      description: |
+        Get paginated list of grievances.
+        - Regular users see only their own grievances
+        - Admin/Staff can see all grievances
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+          description: Items per page
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, in_progress, resolved, rejected]
+          description: Filter by status
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by category
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: createdAt:desc
+          description: Sort field and order (field:asc or field:desc)
+      responses:
+        '200':
+          description: Grievances retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Grievance'
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  totalResults:
+                    type: integer
+
+    post:
+      tags:
+        - Grievances
+      summary: Create grievance
+      description: Submit a new complaint/grievance with automatic AI categorization
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - description
+              properties:
+                description:
+                  type: string
+                  description: Detailed description of the grievance
+                  example: "I received a fraudulent call claiming to be from my bank asking for OTP"
+                category:
+                  type: string
+                  description: Manual category (optional, will be auto-detected if not provided)
+                  example: "Financial Fraud"
+                evidenceFiles:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Supporting evidence (screenshots, recordings, etc.)
+                audioTranscript:
+                  type: string
+                  format: binary
+                  description: Audio recording to transcribe
+      responses:
+        '201':
+          description: Grievance created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grievance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/grievances/{grievanceId}:
+    get:
+      tags:
+        - Grievances
+      summary: Get grievance details
+      description: Retrieve detailed information about a specific grievance
+      parameters:
+        - in: path
+          name: grievanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Grievance ID
+      responses:
+        '200':
+          description: Grievance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grievance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Grievances
+      summary: Update grievance
+      description: Update grievance details (users can only update pending grievances)
+      parameters:
+        - in: path
+          name: grievanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                category:
+                  type: string
+      responses:
+        '200':
+          description: Grievance updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grievance'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags:
+        - Grievances
+      summary: Delete grievance
+      description: Soft delete a grievance
+      parameters:
+        - in: path
+          name: grievanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Grievance deleted
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/grievances/{grievanceId}/status:
+    patch:
+      tags:
+        - Grievances
+      summary: Update grievance status
+      description: Change grievance status (Admin/Staff only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: grievanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, in_progress, resolved, rejected]
+                notes:
+                  type: string
+                  description: Admin notes about status change
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grievance'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/grievances/{grievanceId}/assign:
+    patch:
+      tags:
+        - Grievances
+      summary: Assign grievance
+      description: Assign grievance to staff member (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: grievanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - assignedTo
+              properties:
+                assignedTo:
+                  type: string
+                  format: uuid
+                  description: Staff user ID
+      responses:
+        '200':
+          description: Grievance assigned
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== App Verification ====================
+  /api/v1/app/health:
+    get:
+      tags:
+        - System
+      summary: App health check
+      description: Check API health status
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  # ==================== ML Services (Deprecated) ====================
+  /api/v1/ml/predict/category:
+    post:
+      tags:
+        - ML Services (Legacy)
+      summary: Categorize text (DEPRECATED)
+      description: |
+        ⚠️ DEPRECATED: Use POST /api/v1/grievances instead (auto-categorization)
+        
+        Categorize complaint text using ML
+      deprecated: true
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  example: "I received a fraudulent SMS"
+      responses:
+        '200':
+          description: Category predicted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category:
+                    type: string
+                    example: "SMS Fraud"
+                  confidence:
+                    type: number
+                    example: 0.89
+
+  /api/v1/ml/detect/deepfake:
+    post:
+      tags:
+        - ML Services (Legacy)
+      summary: Detect deepfake (DEPRECATED)
+      description: |
+        ⚠️ DEPRECATED: Use POST /api/v1/identity/verify instead
+        
+        Detect deepfake in video
+      deprecated: true
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - video
+              properties:
+                video:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Analysis complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isDeepfake:
+                    type: boolean
+                  confidence:
+                    type: number
+
+  /api/v1/ml/transcribe:
+    post:
+      tags:
+        - ML Services (Legacy)
+      summary: Transcribe audio (DEPRECATED)
+      description: |
+        ⚠️ DEPRECATED
+        
+        Convert audio to text
+      deprecated: true
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audio
+              properties:
+                audio:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Transcription complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /api/v1/auth/login
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for ML service authentication
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin, staff, official]
+        phoneNumber:
+          type: string
+        isEmailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthTokens:
+      type: object
+      properties:
+        access:
+          type: object
+          properties:
+            token:
+              type: string
+            expires:
+              type: string
+              format: date-time
+        refresh:
+          type: object
+          properties:
+            token:
+              type: string
+            expires:
+              type: string
+              format: date-time
+
+    Grievance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        category:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, resolved, rejected]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        assignedTo:
+          type: string
+          format: uuid
+        sentiment:
+          type: object
+          properties:
+            label:
+              type: string
+              enum: [positive, neutral, negative]
+            score:
+              type: number
+        isToxic:
+          type: boolean
+        evidenceUrls:
+          type: array
+          items:
+            type: string
+        transcription:
+          type: string
+        aiAnalysis:
+          type: object
+          properties:
+            categories:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  confidence:
+                    type: number
+            extractedEntities:
+              type: array
+              items:
+                type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        requestId:
+          type: string
+          format: uuid
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 400
+            message: Validation error
+            errors:
+              - field: email
+                message: Invalid email format
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 401
+            message: Please authenticate
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 403
+            message: Forbidden - You do not have the required role
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 404
+            message: Resource not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 500
+            message: Internal server error
+
+  parameters:
+    PageParam:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+
+    LimitParam:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      description: Items per page
+
+    SortByParam:
+      in: query
+      name: sortBy
+      schema:
+        type: string
+      description: Sort by field (field:asc or field:desc)
+      example: createdAt:desc
