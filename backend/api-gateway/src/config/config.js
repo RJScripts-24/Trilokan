@@ -12,13 +12,29 @@ module.exports = {
 
   // Database Config (PostgreSQL)
   postgres: {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'trilokan_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    dialect: 'postgres',
-    // Optional: Connection pool settings for scalability
+    // Support connection string (Neon) or individual parameters
+    ...(process.env.DATABASE_URL
+      ? {
+          // Use connection string (Neon PostgreSQL)
+          url: process.env.DATABASE_URL,
+          dialect: 'postgres',
+          dialectOptions: {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false,
+            },
+          },
+        }
+      : {
+          // Use individual parameters (Local development)
+          host: process.env.DB_HOST || 'localhost',
+          port: process.env.DB_PORT || 5432,
+          database: process.env.DB_NAME || 'trilokan_db',
+          user: process.env.DB_USER || 'postgres',
+          password: process.env.DB_PASSWORD || 'postgres',
+          dialect: 'postgres',
+        }),
+    // Connection pool settings for scalability
     pool: {
       max: 5,
       min: 0,
