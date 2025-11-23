@@ -35,6 +35,10 @@ lerna-debug.log*
 yarn.lock
 pnpm-lock.yaml
 
+# Deployment files (should not be in root in production)
+# package.json in root is for unified deployment only
+# Procfile and start.sh are deployment-specific
+
 # Build outputs
 dist/
 build/
