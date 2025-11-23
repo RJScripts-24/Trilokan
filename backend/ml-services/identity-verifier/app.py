@@ -1,38 +1,52 @@
 import os
 import logging
+import time
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
 # --- Module Imports ---
-# We are importing the processing functions from your 'modules' directory.
-# We'll assume each function takes a file path as input and returns a
-# dictionary with its analysis results.
 try:
     from modules.face_processor import analyze_face
     from modules.voice_processor import analyze_voice
     from modules.doc_processor import analyze_document
 except ImportError:
     logging.error("Could not import modules. Make sure 'modules/face_processor.py', 'modules/voice_processor.py', and 'modules/doc_processor.py' exist.")
-    # In a real app, you might want to exit, but for setup, we can define stubs.
     def analyze_face(path): return {'status': 'error', 'message': 'face_processor module not found'}
     def analyze_voice(path): return {'status': 'error', 'message': 'voice_processor module not found'}
     def analyze_document(path): return {'status': 'error', 'message': 'doc_processor module not found'}
+
+# --- Phase 2: Pipeline Imports ---
+try:
+    from pipeline.orchestrator import orchestrate_verification
+    from pipeline.stage1 import run_stage1
+    from pipeline.stage2 import run_stage2
+    from models.policy_engine import get_policy_engine
+    from ingest.capture import IngestCapture
+    from ops.logging_config import setup_logging
+    PHASE2_ENABLED = True
+except ImportError as e:
+    logging.warning(f"Phase 2 pipeline modules not fully available: {e}")
+    PHASE2_ENABLED = False
 
 # --- App Setup ---
 app = Flask(__name__)
 
 # --- Configuration ---
-# Create a temporary folder to store uploaded files before processing
 UPLOAD_FOLDER = 'temp_uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# Set a limit on the file size (e.g., 50MB)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 
-
-# Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+if PHASE2_ENABLED:
+    try:
+        setup_logging()
+    except Exception:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+else:
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger(__name__)
 
 # --- Helper Function ---
 def cleanup_files(paths):
@@ -59,18 +73,14 @@ def health_check():
 @app.route('/verify', methods=['POST'])
 def verify_identity():
     """
-    The main multi-modal verification endpoint.
-    It expects a 'multipart/form-data' request with:
-    - 'video': A video file for face and liveness analysis.
-    - 'audio': An audio file for voice spoofing analysis.
-    - 'document': An image file of an ID (e.g., driver's license).
+    Legacy multi-modal verification endpoint.
+    Expects 'multipart/form-data' with video, audio, document files.
     """
-    logging.info("Received new verification request.")
+    logger.info("Received legacy verification request.")
     
     video_path, audio_path, doc_path = None, None, None
     
     try:
-        # --- 1. Check for required files ---
         if 'video' not in request.files:
             return jsonify({'error': 'Missing "video" file in request'}), 400
         if 'audio' not in request.files:
@@ -82,7 +92,6 @@ def verify_identity():
         audio_file = request.files['audio']
         doc_file = request.files['document']
 
-        # --- 2. Save files securely ---
         video_filename = secure_filename(f"video_{os.urandom(8).hex()}")
         audio_filename = secure_filename(f"audio_{os.urandom(8).hex()}")
         doc_filename = secure_filename(f"doc_{os.urandom(8).hex()}")
@@ -95,25 +104,17 @@ def verify_identity():
         audio_file.save(audio_path)
         doc_file.save(doc_path)
         
-        logging.info(f"Files saved temporarily to: {video_path}, {audio_path}, {doc_path}")
+        logger.info(f"Files saved temporarily to: {video_path}, {audio_path}, {doc_path}")
 
-        # --- 3. Run AI/ML Processing ---
-        # Each 'analyze' function is expected to return a dictionary.
-        # e.g., {'status': 'success', 'is_deepfake': False, 'liveness_score': 0.95}
-        
-        logging.info("Starting face analysis...")
+        logger.info("Starting face analysis...")
         face_result = analyze_face(video_path)
         
-        logging.info("Starting voice analysis...")
+        logger.info("Starting voice analysis...")
         voice_result = analyze_voice(audio_path)
         
-        logging.info("Starting document analysis...")
+        logger.info("Starting document analysis...")
         doc_result = analyze_document(doc_path)
 
-        # --- 4. Aggregate Results ---
-        # This is the final JSON response that will be sent to the React frontend.
-        
-        # Determine the overall status. For a hackathon, a simple "all pass" rule works.
         is_verified = (
             face_result.get('status') == 'success' and
             voice_result.get('status') == 'success' and
@@ -122,6 +123,7 @@ def verify_identity():
         
         final_result = {
             'overall_status': 'success' if is_verified else 'failed',
+            'overall_pass': is_verified,
             'checks': {
                 'face_analysis': face_result,
                 'voice_analysis': voice_result,
@@ -129,18 +131,150 @@ def verify_identity():
             }
         }
         
-        logging.info(f"Verification complete. Overall status: {final_result['overall_status']}")
+        logger.info(f"Verification complete. Overall status: {final_result['overall_status']}")
         return jsonify(final_result), 200
 
     except Exception as e:
-        # Catch-all for any unexpected errors during processing
-        logging.error(f"An error occurred during verification: {e}", exc_info=True)
+        logger.error(f"An error occurred during verification: {e}", exc_info=True)
         return jsonify({'error': 'An internal server error occurred', 'details': str(e)}), 500
         
     finally:
-        # --- 5. Cleanup ---
-        # Always delete the temporary files, whether processing succeeded or failed.
         cleanup_files([video_path, audio_path, doc_path])
+
+
+@app.route('/verify/identity', methods=['POST'])
+def verify_identity_phase2():
+    """
+    Phase 2: Full pipeline verification with CNN deepfake detection, fusion scoring, and policy engine.
+    
+    Accepts:
+      - JSON body with 'video_path' (existing file), OR
+      - Multipart with 'video' file upload
+    
+    Optional JSON fields:
+      - user_id: str
+      - action: str (login, profile_update, high_value_tx)
+      - model_name: str (xception, efficientnet)
+    
+    Returns:
+      {
+        "overall_pass": bool,
+        "final_score": float,
+        "video_fake_prob": float,
+        "deepfake_pass": bool,
+        "liveness_passed": bool,
+        "blur_score": float,
+        "reason": str,
+        "audit_id": str,
+        "processing_ms": float,
+        "policy_decision": str,
+        "risk_category": str
+      }
+    """
+    if not PHASE2_ENABLED:
+        return jsonify({'error': 'Phase 2 pipeline not available'}), 501
+    
+    logger.info("Received Phase 2 identity verification request.")
+    
+    video_path = None
+    temp_file = False
+    start_time = time.time()
+    
+    try:
+        # Parse request
+        if request.is_json:
+            data = request.get_json()
+            video_path = data.get('video_path')
+            if not video_path or not os.path.exists(video_path):
+                return jsonify({'error': 'Invalid or missing video_path in JSON body'}), 400
+            user_id = data.get('user_id', 'anonymous')
+            action = data.get('action', 'login')
+            model_name = data.get('model_name', 'xception')
+        else:
+            # Multipart file upload
+            if 'video' not in request.files:
+                return jsonify({'error': 'Missing "video" file in multipart request'}), 400
+            
+            video_file = request.files['video']
+            video_filename = secure_filename(f"video_{os.urandom(8).hex()}.mp4")
+            video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_filename)
+            video_file.save(video_path)
+            temp_file = True
+            
+            user_id = request.form.get('user_id', 'anonymous')
+            action = request.form.get('action', 'login')
+            model_name = request.form.get('model_name', 'xception')
+        
+        logger.info(f"Processing video: {video_path} for user: {user_id}, action: {action}")
+        
+        # Create capture object
+        capture = IngestCapture(video_path=video_path)
+        
+        # Stage 1: Lightweight checks
+        logger.info("Running stage 1 checks...")
+        stage1_result = run_stage1(capture)
+        
+        if not stage1_result.get('pass', False):
+            logger.warning(f"Stage 1 failed: {stage1_result.get('reason')}")
+            return jsonify({
+                'overall_pass': False,
+                'reason': stage1_result.get('reason', 'Stage 1 checks failed'),
+                'audit_id': stage1_result.get('audit_id'),
+                'processing_ms': (time.time() - start_time) * 1000
+            }), 200
+        
+        # Stage 2: ML/DL checks with deepfake detection
+        logger.info("Running stage 2 checks (deepfake + fusion)...")
+        context = {'user_id': user_id, 'action': action, 'model_name': model_name}
+        stage2_result = run_stage2(capture, stage1_result, video_path, context)
+        
+        # Policy Engine
+        logger.info("Applying policy engine...")
+        policy = get_policy_engine()
+        
+        raw_signals = {
+            'video_fake_prob': stage2_result.get('video_fake_prob', 0.0),
+            'liveness_ok': stage2_result.get('signals', {}).get('liveness_ok', True),
+            'blur_score': stage2_result.get('signals', {}).get('blur_score', 100.0),
+            'rppg_ok': stage2_result.get('signals', {}).get('rppg_ok', True)
+        }
+        
+        policy_result = policy.apply_policy(
+            fused_score=stage2_result.get('final_score', 0.0),
+            raw_signals=raw_signals,
+            context=context
+        )
+        
+        # Build final response
+        response = {
+            'overall_pass': stage2_result.get('overall_pass', False),
+            'final_score': stage2_result.get('final_score', 0.0),
+            'video_fake_prob': stage2_result.get('video_fake_prob', 0.0),
+            'deepfake_pass': stage2_result.get('deepfake_pass', False),
+            'liveness_passed': stage2_result.get('signals', {}).get('liveness_ok', False),
+            'blur_score': stage2_result.get('signals', {}).get('blur_score', 0.0),
+            'reason': policy_result.get('reasons', ['Unknown'])[0],
+            'audit_id': stage2_result.get('audit_id'),
+            'processing_ms': (time.time() - start_time) * 1000,
+            'policy_decision': policy_result.get('final_decision'),
+            'risk_category': policy_result.get('risk_category'),
+            'action_code': policy_result.get('action_code')
+        }
+        
+        logger.info(f"Verification complete: {response['policy_decision']} (score={response['final_score']:.3f})")
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"Error during Phase 2 verification: {e}", exc_info=True)
+        return jsonify({
+            'error': 'Internal server error during verification',
+            'details': str(e),
+            'processing_ms': (time.time() - start_time) * 1000
+        }), 500
+        
+    finally:
+        if temp_file and video_path:
+            cleanup_files([video_path])
 
 # --- Run the App ---
 if __name__ == '__main__':

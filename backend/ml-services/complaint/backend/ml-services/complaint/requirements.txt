@@ -1,0 +1,19 @@
+# Web framework & ASGI server
+fastapi
+uvicorn[standard]
+
+# ORMs & DB
+sqlalchemy>=1.4
+asyncpg
+alembic
+
+# Validation & data models
+pydantic
+
+# Testing
+pytest
+httpx
+
+# Utilities
+python-dotenv
+requests

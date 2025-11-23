@@ -1,0 +1,326 @@
+# ========================================
+# .gitignore for Trilokan Backend Project
+# Node.js API Gateway + Python ML Services
+# ========================================
+
+# ====================================
+# Environment Variables & Secrets
+# ====================================
+.env
+.env.*
+!.env.example
+*.env
+.envrc
+
+# API Keys and Secrets
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ====================================
+# Node.js (API Gateway)
+# ====================================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# ====================================
+# Python (ML Services)
+# ====================================
+# Virtual Environments
+.venv/
+.venv-*/
+venv/
+env/
+ENV/
+virtualenv/
+.python-version
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.whl
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+pytest_debug.log
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# ====================================
+# ML/AI Specific Files
+# ====================================
+# Model files (large binaries)
+*.h5
+*.hdf5
+*.pb
+*.ckpt
+*.pth
+*.pt
+*.onnx
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.weights
+model.pkl
+*.safetensors
+
+# ML Training artifacts
+checkpoints/
+tensorboard/
+runs/
+mlruns/
+wandb/
+.neptune/
+
+# Large datasets
+data/raw/
+data/processed/
+*.csv
+*.tsv
+*.parquet
+*.feather
+datasets/
+
+# Uploaded files & temporary data
+uploads/*
+!uploads/.gitkeep
+temp_uploads/*
+!temp_uploads/.gitkeep
+reference_apks/*
+!reference_apks/.gitkeep
+demo_output/*
+!demo_output/.gitkeep
+
+# Brand icons (if auto-downloaded)
+brand_icons/*
+!brand_icons/.gitkeep
+
+# ====================================
+# Database
+# ====================================
+# SQLite
+*.sqlite
+*.sqlite3
+*.db
+
+# PostgreSQL dumps
+*.sql
+*.dump
+
+# Database migration temp files
+db/migrations/*.tmp
+
+# ====================================
+# IDEs and Editors
+# ====================================
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ / PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# ====================================
+# Operating System Files
+# ====================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ====================================
+# Logs and Temporary Files
+# ====================================
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.cache
+crawler.log
+error.log
+debug.log
+combined.log
+
+# ====================================
+# Media Files (Test/Demo)
+# ====================================
+# Videos (can be large)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Audio
+*.wav
+*.mp3
+*.ogg
+*.flac
+
+# Images (if test data)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+!brand_icons/*.png
+!brand_icons/*.jpg
+
+# ====================================
+# Docker & Container Related
+# ====================================
+docker-compose.override.yml
+.dockerignore
+
+# ====================================
+# CI/CD & GitHub
+# ====================================
+.github/workflows/*.local.yml
+
+# ====================================
+# Project Specific Exclusions
+# ====================================
+# APK Files (can be large)
+*.apk
+
+# Trust Registry (if contains sensitive data)
+# Uncomment if trust_registry.json contains private data
+# trust_registry.json
+
+# Sequelize CLI (if using seeders with real data)
+db/seeders/*-real-data.js
+
+# Test fixtures with sensitive data
+tests/fixtures/sensitive/
+
+# Email templates compiled
+*.email.compiled.html
+
+# ====================================
+# Documentation Build Artifacts
+# ====================================
+docs/_build/
+docs/.doctrees/
+site/
+
+# ====================================
+# Miscellaneous
+# ====================================
+.sass-cache/
+*.pid
+*.seed
+*.pid.lock
+.grunt/
+bower_components/
+.lock-wscript
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+.cache/

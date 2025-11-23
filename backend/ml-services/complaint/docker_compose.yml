@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # The Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: trilokan_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trilokan_db
+    ports:
+      - "5432:5432"  # Maps localhost:5432 -> Container:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,0 +1,43 @@
+{
+  "movements": [
+    {
+      "id": "turn_left",
+      "prompt": "Slowly turn your head to the LEFT",
+      "expected_signal": "head_yaw",
+      "target_value": -20.0,
+      "operator": "less_than"
+    },
+    {
+      "id": "turn_right",
+      "prompt": "Slowly turn your head to the RIGHT",
+      "expected_signal": "head_yaw",
+      "target_value": 20.0,
+      "operator": "greater_than"
+    },
+    {
+      "id": "blink",
+      "prompt": "Blink your eyes twice",
+      "expected_signal": "eye_aspect_ratio",
+      "target_value": 0.2,
+      "operator": "less_than"
+    },
+    {
+      "id": "smile",
+      "prompt": "Give a big smile",
+      "expected_signal": "mouth_aspect_ratio",
+      "target_value": 0.6,
+      "operator": "greater_than"
+    }
+  ],
+  "phrases": [
+    "Trust Guard Secure",
+    "Verify My Identity",
+    "Digital Finance 2025",
+    "My Voice Is My Password",
+    "Secure Banking Login"
+  ],
+  "config": {
+    "movement_timeout_sec": 5,
+    "min_confidence": 0.7
+  }
+}
