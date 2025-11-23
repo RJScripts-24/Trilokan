@@ -4,6 +4,7 @@ const userRoute = require('./user.routes');
 const identityRoute = require('./identity.routes');
 const appRoute = require('./app.routes');
 const grievanceRoute = require('./grievance.routes');
+const mlRoute = require('./ml.routes');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -34,6 +35,12 @@ const defaultRoutes = [
     path: '/grievances',
     route: grievanceRoute, 
     // Maps to: POST /api/v1/grievances (The Complaint System)
+  },
+  {
+    path: '/ml',
+    route: mlRoute,
+    // Maps to: Legacy ML service endpoints (compatibility layer)
+    // TODO: Mark as deprecated
   },
 ];
 

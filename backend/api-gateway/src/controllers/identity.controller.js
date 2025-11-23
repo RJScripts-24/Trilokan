@@ -37,7 +37,7 @@ const getVerificationChallenge = catchAsync(async (req, res) => {
 });
 
 /**
- * Verify Identity (Deepfake & Liveness Check)
+ * Verify Identity (Multi-modal Verification)
  * POST /api/v1/identity/verify
  * * Expects 'multipart/form-data' with:
  * - faceVideo: The video file of the user performing the action.
@@ -45,41 +45,43 @@ const getVerificationChallenge = catchAsync(async (req, res) => {
  * - idDocument: (Optional) Image of their government ID.
  */
 const verifyIdentity = catchAsync(async (req, res) => {
-  // 1. Check if files were uploaded
+  // 1. Check if required files were uploaded
   if (!req.files || !req.files.faceVideo) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Face video is required for liveness check');
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Face video is required for identity verification');
   }
 
-  const faceVideo = req.files.faceVideo[0];
-  const voiceAudio = req.files.voiceAudio ? req.files.voiceAudio[0] : null;
-  const idDocument = req.files.idDocument ? req.files.idDocument[0] : null;
-
-  // 2. Call the Python AI Microservice
-  // We pass the file buffers/paths to the service which sends them to the Python backend.
-  // This aligns with the "Multi-modal verification" requirement[cite: 16, 18, 21].
-  const result = await mlService.detectDeepfake({
-    faceVideo,
-    voiceAudio,
-    idDocument,
-    userId: req.user.id // From auth middleware
-  });
-
-  // 3. Analyze result
-  // The ML service returns a confidence score (0.0 to 1.0) and a boolean verdict.
-  if (!result.isReal) {
-    // If fake, we might want to log a security alert here (future enhancement)
-    return res.status(httpStatus.OK).send({
-      verified: false,
-      reason: result.reason || 'Deepfake artifacts detected',
-      confidenceScore: result.confidenceScore
-    });
+  // 2. Prepare files for ML service
+  const files = {};
+  
+  if (req.files.faceVideo && req.files.faceVideo[0]) {
+    files.video = req.files.faceVideo[0];
+  }
+  
+  if (req.files.voiceAudio && req.files.voiceAudio[0]) {
+    files.audio = req.files.voiceAudio[0];
+  }
+  
+  if (req.files.idDocument && req.files.idDocument[0]) {
+    files.document = req.files.idDocument[0];
   }
 
-  // 4. Success response
+  // 3. Call the ML Identity Verification Service
+  // Uses the new standardized verifyIdentity wrapper
+  const result = await mlService.verifyIdentity(files);
+
+  // 4. Check result status
+  if (result.status === 'error') {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, result.error || 'Identity verification service error');
+  }
+
+  // 5. Return standardized response
   res.status(httpStatus.OK).send({
-    verified: true,
-    message: 'Identity verified successfully',
-    confidenceScore: result.confidenceScore
+    verified: result.identityVerified,
+    confidence: result.confidence,
+    message: result.identityVerified 
+      ? 'Identity verified successfully' 
+      : 'Identity verification failed',
+    details: result.details
   });
 });
 

@@ -1,6 +1,8 @@
 import os
 import logging
 import time
+from datetime import datetime
+from functools import wraps
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
@@ -37,6 +39,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# API Key for authentication
+API_KEY = os.environ.get('X_API_KEY', 'dev-api-key-identity-verifier')
+
 # Setup logging
 if PHASE2_ENABLED:
     try:
@@ -47,6 +52,21 @@ else:
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
+
+# --- Authentication Decorator ---
+def require_api_key(f):
+    """Decorator to validate x-api-key header"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('x-api-key')
+        if not api_key or api_key != API_KEY:
+            logger.warning(f"Unauthorized access attempt from {request.remote_addr}")
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized - Invalid or missing x-api-key'
+            }), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- Helper Function ---
 def cleanup_files(paths):
@@ -66,32 +86,50 @@ def cleanup_files(paths):
 @app.route('/health', methods=['GET'])
 def health_check():
     """
-    A simple health check endpoint to confirm the service is running.
+    Public health check endpoint (no auth required).
+    Returns machine-readable status for monitoring.
     """
-    return jsonify({"status": "healthy", "service": "identity-verifier"}), 200
+    return jsonify({
+        "service": "identity-verifier",
+        "status": "ok",
+        "timestamp": datetime.utcnow().isoformat() + 'Z'
+    }), 200
 
 @app.route('/verify', methods=['POST'])
+@require_api_key
 def verify_identity():
     """
-    Legacy multi-modal verification endpoint.
+    Standardized multi-modal verification endpoint.
     Expects 'multipart/form-data' with video, audio, document files.
+    Returns standardized JSON response.
     """
-    logger.info("Received legacy verification request.")
+    logger.info("Received verification request.")
     
     video_path, audio_path, doc_path = None, None, None
     
     try:
+        # Validate required files
         if 'video' not in request.files:
-            return jsonify({'error': 'Missing "video" file in request'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing "video" file in request'
+            }), 400
         if 'audio' not in request.files:
-            return jsonify({'error': 'Missing "audio" file in request'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing "audio" file in request'
+            }), 400
         if 'document' not in request.files:
-            return jsonify({'error': 'Missing "document" file in request'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing "document" file in request'
+            }), 400
 
         video_file = request.files['video']
         audio_file = request.files['audio']
         doc_file = request.files['document']
 
+        # Save files temporarily
         video_filename = secure_filename(f"video_{os.urandom(8).hex()}")
         audio_filename = secure_filename(f"audio_{os.urandom(8).hex()}")
         doc_filename = secure_filename(f"doc_{os.urandom(8).hex()}")
@@ -106,6 +144,7 @@ def verify_identity():
         
         logger.info(f"Files saved temporarily to: {video_path}, {audio_path}, {doc_path}")
 
+        # Perform analysis
         logger.info("Starting face analysis...")
         face_result = analyze_face(video_path)
         
@@ -115,34 +154,64 @@ def verify_identity():
         logger.info("Starting document analysis...")
         doc_result = analyze_document(doc_path)
 
+        # Calculate confidence and verification status
         is_verified = (
             face_result.get('status') == 'success' and
             voice_result.get('status') == 'success' and
             doc_result.get('status') == 'success'
         )
         
-        final_result = {
-            'overall_status': 'success' if is_verified else 'failed',
-            'overall_pass': is_verified,
-            'checks': {
-                'face_analysis': face_result,
-                'voice_analysis': voice_result,
-                'document_analysis': doc_result
+        confidence = 0.0
+        if is_verified:
+            # Calculate average confidence from sub-modules
+            confidences = []
+            if 'confidence' in face_result:
+                confidences.append(face_result['confidence'])
+            if 'confidence' in voice_result:
+                confidences.append(voice_result['confidence'])
+            if 'confidence' in doc_result:
+                confidences.append(doc_result['confidence'])
+            confidence = sum(confidences) / len(confidences) if confidences else 0.85
+        
+        # Standardized response
+        response = {
+            'status': 'success',
+            'result': {
+                'identity_verified': is_verified,
+                'confidence': round(confidence, 3),
+                'details': {
+                    'face_analysis': face_result,
+                    'voice_analysis': voice_result,
+                    'document_analysis': doc_result
+                }
+            },
+            'meta': {
+                'service': 'identity-verifier',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
             }
         }
         
-        logger.info(f"Verification complete. Overall status: {final_result['overall_status']}")
-        return jsonify(final_result), 200
+        logger.info(f"Verification complete. Identity verified: {is_verified}, Confidence: {confidence:.3f}")
+        return jsonify(response), 200
 
     except Exception as e:
         logger.error(f"An error occurred during verification: {e}", exc_info=True)
-        return jsonify({'error': 'An internal server error occurred', 'details': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': 'An internal server error occurred',
+            'details': str(e),
+            'meta': {
+                'service': 'identity-verifier',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }
+        }), 500
         
     finally:
         cleanup_files([video_path, audio_path, doc_path])
 
 
 @app.route('/verify/identity', methods=['POST'])
+@require_api_key
 def verify_identity_phase2():
     """
     Phase 2: Full pipeline verification with CNN deepfake detection, fusion scoring, and policy engine.
@@ -278,6 +347,7 @@ def verify_identity_phase2():
 
 # --- Run the App ---
 if __name__ == '__main__':
-    # Running on 0.0.0.0 makes it accessible from outside the Docker container.
-    # Port 5001 is used to avoid conflicts with other services.
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    # Get port from environment variable or default to 5002
+    port = int(os.environ.get('PORT', 5002))
+    logger.info(f"Starting Identity Verifier Service on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=True)

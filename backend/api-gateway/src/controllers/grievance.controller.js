@@ -18,11 +18,15 @@ const createGrievance = catchAsync(async (req, res) => {
   // 1. Handle Voice Input (Inclusivity Feature)
   // If the user recorded a voice note, we send it to the AI service for Speech-to-Text.
   if (req.files && req.files.voiceAudio) {
-    const transcriptionResult = await mlService.transcribeAudio(req.files.voiceAudio[0]);
+    const audioFile = req.files.voiceAudio[0];
+    const transcriptionResult = await mlService.transcribeAudio(audioFile.buffer, audioFile.originalname);
+    
     // Append transcription to description or use as main description
-    description = description 
-      ? `${description}\n\n[Voice Transcription]: ${transcriptionResult.text}`
-      : transcriptionResult.text;
+    if (transcriptionResult.status === 'success' && transcriptionResult.text) {
+      description = description 
+        ? `${description}\n\n[Voice Transcription]: ${transcriptionResult.text}`
+        : transcriptionResult.text;
+    }
   }
 
   if (!description) {
@@ -33,14 +37,21 @@ const createGrievance = catchAsync(async (req, res) => {
   // We analyze the text to automatically set the category (e.g., "Fraud", "Service")
   // and priority (e.g., "High" for fraud, "Low" for inquiries).
   const aiAnalysis = await mlService.analyzeGrievanceText(description);
+  
+  // Extract category from new format
+  const suggestedCategory = aiAnalysis.status === 'success' && aiAnalysis.categories && aiAnalysis.categories.length > 0
+    ? aiAnalysis.categories[0].name
+    : 'General';
+  
+  const suggestedPriority = aiAnalysis.priority || 'Medium';
 
   // 3. Save to Database
   const grievance = await grievanceService.createGrievance({
     userId: req.user.id,
     title: title || 'New Grievance', // Fallback title
     description,
-    category: aiAnalysis.suggestedCategory || 'General',
-    priority: aiAnalysis.suggestedPriority || 'Medium',
+    category: suggestedCategory,
+    priority: suggestedPriority,
     status: 'Open',
     attachments: req.files ? req.files.evidence : [] // Handle evidence images/docs
   });
