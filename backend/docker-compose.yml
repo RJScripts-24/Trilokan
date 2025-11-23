@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: trilokan-postgres
+    environment:
+      POSTGRES_DB: trilokan_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Complaint ML Service
+  complaint-ml:
+    build:
+      context: ./ml-services/complaint
+      dockerfile: Dockerfile
+    container_name: trilokan-complaint-ml
+    environment:
+      PORT: 5000
+      X_API_KEY: dev-api-key-complaint-service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./ml-services/complaint:/app
+      - complaint_uploads:/app/temp_uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # App Crawler Service
+  app-crawler:
+    build:
+      context: ./ml-services/app-crawler
+      dockerfile: Dockerfile
+    container_name: trilokan-app-crawler
+    environment:
+      PORT: 5001
+      X_API_KEY: dev-api-key-app-crawler
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./ml-services/app-crawler:/app
+      - app_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Identity Verifier Service
+  identity-verifier:
+    build:
+      context: ./ml-services/identity-verifier
+      dockerfile: Dockerfile
+    container_name: trilokan-identity-verifier
+    environment:
+      PORT: 5002
+      X_API_KEY: dev-api-key-identity-verifier
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./ml-services/identity-verifier:/app
+      - identity_uploads:/app/temp_uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: trilokan-api-gateway
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: trilokan_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: your-super-secret-jwt-key-change-this
+      ML_COMPLAINT_URL: http://complaint-ml:5000
+      ML_COMPLAINT_API_KEY: dev-api-key-complaint-service
+      ML_IDENTITY_URL: http://identity-verifier:5002
+      ML_IDENTITY_API_KEY: dev-api-key-identity-verifier
+      ML_APP_CRAWLER_URL: http://app-crawler:5001
+      ML_APP_CRAWLER_API_KEY: dev-api-key-app-crawler
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api-gateway:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      complaint-ml:
+        condition: service_healthy
+      app-crawler:
+        condition: service_healthy
+      identity-verifier:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  complaint_uploads:
+  app_uploads:
+  identity_uploads:
+
+networks:
+  default:
+    name: trilokan-network

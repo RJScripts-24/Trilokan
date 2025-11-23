@@ -2,13 +2,16 @@ const app = require('./app');
 const config = require('./src/config/config');
 const logger = require('./src/config/logger');
 const { sequelize } = require('./src/models');
+const mlService = require('./src/services/ml.service');
 
 let server;
 
 /**
  * Start Server Logic
  * 1. Connects to PostgreSQL via Sequelize
- * 2. Starts the Express HTTP Server
+ * 2. Performs ML services readiness probe
+ * 3. Starts health monitoring
+ * 4. Starts the Express HTTP Server
  */
 const startServer = async () => {
   try {
@@ -18,6 +21,10 @@ const startServer = async () => {
 
     // Optional: Sync models (Not recommended for production, use migrations instead)
     // await sequelize.sync(); 
+
+    // Perform ML services readiness probe
+    logger.info('Checking ML services readiness...');
+    await mlService.startHealthChecks();
 
     server = app.listen(config.port, () => {
       logger.info(`Listening to port ${config.port}`);
@@ -39,9 +46,11 @@ const exitHandler = () => {
   if (server) {
     server.close(() => {
       logger.info('Server closed');
+      mlService.stopHealthChecks();
       process.exit(1);
     });
   } else {
+    mlService.stopHealthChecks();
     process.exit(1);
   }
 };
